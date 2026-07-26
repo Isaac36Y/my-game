@@ -19,10 +19,12 @@ export type GameEvent =
     | { readonly type: "TAKE_DAMAGE"; readonly amount: number}
     | { readonly type: "BUMP_TURN"};
 
+export type ResolveResult = { state: CombatState; events: GameEvent[] }
+
 export function resolve(
     state: CombatState,
     action: Action,
-): { state: CombatState; events: GameEvent[] } {
+): ResolveResult {
     
     const events: GameEvent[] = [];
 

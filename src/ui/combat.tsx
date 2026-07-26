@@ -1,11 +1,14 @@
 import { initialCombatState } from "../sim/state";
+import { resolve, type ResolveResult, type Action } from "../sim/engine";
 import styles from "./combat.module.scss"
 import { Zap, Cpu, AudioLines, Shield, ShieldCog, Waypoints } from "lucide-react";
+import { useReducer } from "react";
+
+const adapter = (wrapper: ResolveResult, action: Action) => resolve(wrapper.state, action)
 
 export function Combat() {
-    // For now, just render the starting state so you can confirm it shows up.
-    // Next step: replace this with useReducer so buttons can change it.
-    const state = initialCombatState;
+    const [combat, dispatch] = useReducer(adapter, { state: initialCombatState, events: []})
+    const { state } = combat
 
     return (
         <>
@@ -30,7 +33,7 @@ export function Combat() {
                     </div>
                     <div className={styles.programs}>
                         {state.programs.map((program, key) => (
-                            <button key={key} className={styles.programBtn}>
+                            <button key={key} className={styles.programBtn} onClick={() => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
                                 <span className={styles.name}>{program.name}</span>
                                 <span className={styles.damage}><Cpu /> {program.damage} </span>
                                 <span className={styles.trace}><AudioLines /> {program.trace} </span>

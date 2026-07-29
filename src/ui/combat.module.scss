@@ -26,7 +26,40 @@
     .stats {
         font-size: var(--fs-med);
         display: flex;
+        align-items: flex-start;
         gap: 4rem;
+
+        .health {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+
+            .bar {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                border: none;
+                width: 150%;
+                height: 15px;
+                border-radius: 10px;
+                background-color: #e0e0e0;
+
+                &::-webkit-progress-bar {
+                    background-color: #a9a9a9;
+                    border-radius: 10px;
+                }
+
+                &::-webkit-progress-value {
+                    background-color: red; /* Blue fill */
+                    border-radius: 10px;
+                    transition: width 0.3s ease; /* Smooth animation */
+                }
+                &::-moz-progress-bar {
+                    background-color: #2563eb;
+                    border-radius: 10px;
+                }
+            }
+        }
 
         p {
             display: flex;
@@ -51,37 +84,90 @@
     margin-block: auto 4rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 3rem;
 
-    
 
-    .health {
-        font-size: var(--fs-lg);
-
-        > span {
-            color: var(--color-player);
-        }
-    }
-
-    .stats {
+    .upperPlayer {
         display: flex;
-        gap: 4rem;
-        font-size: var(--fs-med);
+        justify-content: space-between;
+        align-items: center;
 
-        p {
+        .left {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 1rem;
-            
-            > span {
+
+            .health {
+                font-size: var(--fs-lg);
+
+                .bar {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    border: none;
+                    width: 150%;
+                    height: 15px;
+                    border-radius: 10px;
+                    background-color: #e0e0e0;
+
+                    &::-webkit-progress-bar {
+                        background-color: #a9a9a9;
+                        border-radius: 10px;
+                    }
+
+                    &::-webkit-progress-value {
+                        background-color: rgb(60, 117, 44); /* Blue fill */
+                        border-radius: 10px;
+                        transition: width 0.3s ease; /* Smooth animation */
+                    }
+                    &::-moz-progress-bar {
+                        background-color: #2563eb;
+                        border-radius: 10px;
+                    }
+                }
+
+                .text {
+
+                    > span {
+                        color: var(--color-player);
+                    }
+                }
+        
+            }
+        
+            .stats {
                 display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                color: var(--color-player);
+                gap: 4rem;
+                font-size: var(--fs-med);
+        
+                p {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    
+                    > span {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        color: var(--color-player);
+                    }
+                }
+                
             }
         }
-        
+
+        .right {
+
+            .endTurnBtn {
+                background-color: gold;
+                font-size: 1.8rem;
+                padding: 0.5rem 1.5rem;
+                border: 3px inset rgb(226, 194, 14)
+            }
+        }
     }
+    
+
 
     .programs {
         display: grid;
@@ -99,6 +185,13 @@
             row-gap: 0.5rem;
             grid-template-columns: repeat(4, 1fr);
             align-items: center;
+            transition: translate 0.5s ease, box-shadow 0.5s ease;
+            box-shadow: 0 0 0px 0px transparent;
+
+            &:hover {
+                translate: 0 -8px;
+                box-shadow: 0 8px 16px 3px rgba(255, 217, 0, 0.2);
+            }
 
             .name {
                 grid-column: 1 / 5;

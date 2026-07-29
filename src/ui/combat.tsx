@@ -19,17 +19,32 @@ export function Combat() {
                 <div className={`${styles.enemy}`}>
                     <p className={`${styles.name}`}>Snetry-Class Enforcer</p>
                     <div className={styles.stats}>
-                        <p className={styles.health}><span><Cpu />HP:</span> {state.enemy.hp} / {state.enemy.maxHp}</p>
+                        <div className={styles.health}>
+                            <p className={styles.text}><span><Cpu />HP:</span> {state.enemy.hp} / {state.enemy.maxHp}</p>
+                            <progress className={styles.bar} max={ state.enemy.maxHp } value={ state.enemy.hp }></progress>
+                        </div>
                         <p className={styles.armor}><span><ShieldCog />Armor:</span> {state.enemy.armor}</p>
                         <p><span><Waypoints />Intent:</span> {state.enemy.intent[state.enemy.intentIndex].type}</p>
                         <p><span><AudioLines />Trace:</span> {state.enemy.trace} / 60 </p>
                     </div>
                 </div>
                 <div className={`${styles.player}`}>
-                    <p className={styles.health}><span>Player HP:</span> {state.player.hp} / {state.player.maxHp}</p>
-                    <div className={styles.stats}>
-                        <p><span><Zap />Cycles:</span> {state.cycles}</p>
-                        <p><span>Turn:</span> {state.turn} </p>
+                    <div className={styles.upperPlayer}>
+                        <div className={styles.left}>
+                            <div className={styles.health}>
+                                <p className={styles.text}><span>Player HP:</span> {state.player.hp} / {state.player.maxHp}</p>
+                                <progress className={styles.bar} max={ state.player.maxHp } value={ state.player.hp }></progress>
+                            </div>
+                            <div className={styles.stats}>
+                                <p><span><Zap />Cycles:</span> {state.cycles}</p>
+                                <p><span>Turn:</span> {state.turn} </p>
+                            </div>
+                        </div>
+                        <div className={styles.right}>
+                            <button className={styles.endTurnBtn} type="button" onClick={() => dispatch({ type: "TURN_END" })}>
+                                End Turn
+                            </button>
+                        </div>
                     </div>
                     <div className={styles.programs}>
                         {state.programs.map((program, key) => (

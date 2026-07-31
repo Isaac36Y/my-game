@@ -11,7 +11,10 @@ export interface Program {
     readonly cyclePoints: number;
     readonly trace: number;
     readonly block: number;
+    readonly combatUses: number;
 }
+
+export type Winner = "PLAYER" | "ENEMY" | "NULL"
 
 // Combat
 export interface CombatState {
@@ -20,18 +23,20 @@ export interface CombatState {
     readonly turn: number;
     readonly cycles: number;
     readonly programs: readonly Program[];
+    readonly winner: Winner;
 }
 
 export const initialCombatState: CombatState = {
     player: { 
         hp: 55, 
-        maxHp: 80 
+        maxHp: 80 , 
     },
     enemy: { 
         hp: 120, 
         maxHp: 120, 
         armor: 0, 
-        trace: 0, 
+        trace: 0,
+        maxTrace: 60,
         intent: [
             { type: "ATTACK", damage: 10},
             { type: "ARMOR", armor: 10},
@@ -42,11 +47,12 @@ export const initialCombatState: CombatState = {
     turn: 1,
     cycles: 3,
     programs: [
-        { name: "Buffer Overflow", damage: 18, cyclePoints: 3, trace: 20, block: 0 }, // armor answer
-        { name: "Ping",            damage: 4,  cyclePoints: 1, trace: 2, block: 4  }, // silent-but-weak
-        { name: "Scrub",           damage: 0,  cyclePoints: 1, trace: -15, block: 8 }, // trace reducer
-        { name: "Fork Bomb",       damage: 9,  cyclePoints: 2, trace: 12, block: 0 }, // repeatable damage
-        { name: "Rootkit",         damage: 6,  cyclePoints: 2, trace: 8, block: 0  }, // utility / pressure
-        { name: "Kill -9",         damage: 0,  cyclePoints: 2, trace: 5, block: 0  }, // patch interrupt
+        { name: "Buffer Overflow", damage: 12, cyclePoints: 2, trace: 10, block: 4, combatUses: 0 }, // armor answer
+        { name: "Ping",            damage: 4,  cyclePoints: 1, trace: 2, block: 4, combatUses: 0 }, // silent-but-weak
+        { name: "Scrub",           damage: 0,  cyclePoints: 1, trace: -15, block: 8, combatUses: 0 }, // trace reducer
+        { name: "Fork Bomb",       damage: 9,  cyclePoints: 2, trace: 12, block: 0, combatUses: 0 }, // repeatable damage
+        { name: "Rootkit",         damage: 6,  cyclePoints: 1, trace: 8, block: 0, combatUses: 0 }, // utility / pressure
+        { name: "Kill Switch",         damage: 22,  cyclePoints: 3, trace: 20, block: 0, combatUses: 0 }, // patch interrupt
     ],
+    winner: "NULL"
 };

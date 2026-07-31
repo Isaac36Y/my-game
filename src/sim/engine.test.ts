@@ -99,3 +99,13 @@ test("winner switched to player", () => {
 
     expect(result.state.winner).toBe("PLAYER")
 })
+
+test("enemy hits block before hp", () => {
+    const start = initialCombatState
+
+    const addBlock = { ...start, player: { ...start.player, block: 8 }}
+    const result = resolve(addBlock, { type: "TURN_END" })
+
+    expect(result.state.player.block).toBe(0) 
+    expect(result.state.player.hp).toBe(53)
+})

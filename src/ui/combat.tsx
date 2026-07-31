@@ -38,7 +38,7 @@ export function Combat() {
                             <progress className={styles.bar} max={ state.enemy.maxHp } value={ state.enemy.hp }></progress>
                         </div>
                         <p className={styles.armor}><span><ShieldCog />Armor:</span> {state.enemy.armor}</p>
-                        <p><span><Waypoints />Intent:</span> {state.enemy.intent[state.enemy.intentIndex].type}</p>
+                        <p><span><Waypoints />Intent:</span> {state.enemy.intent[state.enemy.intentIndex].type} {state.enemy.intent[state.enemy.intentIndex].amount}</p>
                         <p><span><AudioLines />Trace:</span> {state.enemy.trace} / {state.enemy.maxTrace} </p>
                     </div>
                 </div>
@@ -52,6 +52,7 @@ export function Combat() {
                             <div className={styles.stats}>
                                 <p><span><Zap />Cycles:</span> {state.cycles}</p>
                                 <p><span>Turn:</span> {state.turn} </p>
+                                <p><span><Shield />Block:</span> {state.player.block}</p>
                             </div>
                         </div>
                         <div className={styles.right}>

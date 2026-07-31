@@ -9,7 +9,7 @@ export interface Enemy {
 }
 
 export type Intent =
-    | { readonly type: "ATTACK"; readonly damage: number }
-    | { readonly type: "ARMOR"; readonly armor: number };
+    | { readonly type: "ATTACK"; readonly amount: number }
+    | { readonly type: "ARMOR"; readonly amount: number };
 
 

@@ -10,10 +10,10 @@ export type GameEvent =
     | { readonly type: "DAMAGE_DEALT"; readonly amount: number }
     | { readonly type: "BLOCK_GAINED"; readonly amount: number }
     | { readonly type: "BLOCK_HIT"; readonly amount: number }
-    | { readonly type: "BLOCK_BROKE" }
+    | { readonly type: "BLOCK_BROKE"; readonly amount: number }
     | { readonly type: "ARMOR_GAINED"; readonly amount: number }
     | { readonly type: "ARMOR_HIT"; readonly amount: number }
-    | { readonly type: "ARMOR_BROKE" }
+    | { readonly type: "ARMOR_BROKE"; readonly amount: number }
     | { readonly type: "TRACE_GAINED"; readonly amount: number }
     | { readonly type: "CYCLE_SPENT"; readonly amount: number}
     | { readonly type: "CYCLE_INCREASE"; readonly amount: number}
@@ -46,7 +46,7 @@ export function resolve(
             if (armor > 0) {
                 if (dmg >= armor) {
                     dmg = dmg - armor
-                    events.push({ type: "ARMOR_BROKE" });
+                    events.push({ type: "ARMOR_BROKE", amount: armor });
                     armor = 0
                 }else if (dmg < armor) {
                     armor = armor - dmg
@@ -58,9 +58,10 @@ export function resolve(
             const newTrace = Math.max(0, oldTrace + program.trace)
 
             events.push({ type: "PROGRAM_USED", name: program.name });
-            events.push({ type: "DAMAGE_DEALT", amount: dmg });
-            events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
-            events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
+            if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
+            if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
+            if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
+            if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
             if (state.enemy.hp - dmg <= 0) {
                 events.push({ type: "ENEMY_DIED" })
                 winner = "PLAYER"
@@ -73,6 +74,10 @@ export function resolve(
             const nextState: CombatState = {
                 ...state,
                 cycles: state.cycles - program.cyclePoints,
+                player: {
+                    ...state.player,
+                    block: state.player.block + program.block
+                },
                 enemy: {
                     ...state.enemy,
                     hp: Math.max(0, state.enemy.hp - dmg),
@@ -87,6 +92,7 @@ export function resolve(
         case "TURN_END": {
             const cyclesToThree = 3 - state.cycles
             let playerHp = state.player.hp;
+            let block = state.player.block
             let enemyArmor = state.enemy.armor;
             let winner: Winner = state.winner
             const intentIndex = state.enemy.intentIndex
@@ -94,14 +100,26 @@ export function resolve(
 
             switch (intent.type) {
                 case "ATTACK": {
-                    const dmg = intent.damage;
+                    let dmg = intent.amount;
+                
+                    if (block > 0) {
+                        if (dmg >= block) {
+                            dmg = dmg - block
+                            events.push({ type: "BLOCK_BROKE", amount: block });
+                            block = 0
+                        }else if (dmg < block) {
+                            block = block - dmg
+                            events.push({ type: "BLOCK_HIT", amount: dmg})
+                            dmg = 0
+                        }
+                    }
                     playerHp = Math.max(0, playerHp - dmg);
                     events.push({ type: "TAKE_DAMAGE", amount: dmg });
                     events.push({ type: "PLAYER_DIED" })
                     break
                 }
                 case "ARMOR": {
-                    enemyArmor = intent.armor
+                    enemyArmor = intent.amount
                     events.push({ type: "ARMOR_GAINED", amount: enemyArmor });
                 }
             }
@@ -117,7 +135,8 @@ export function resolve(
                 ...state,
                 player: {
                     ...state.player,
-                    hp: playerHp
+                    hp: playerHp,
+                    block
                 },
                 enemy: {
                     ...state.enemy,

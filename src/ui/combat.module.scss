@@ -193,6 +193,11 @@
                 translate: 0 -8px;
                 box-shadow: 0 8px 16px 3px rgba(255, 217, 0, 0.2);
             }
+
+            &:hover {
+                translate: 0 -8px;
+                box-shadow: 0 8px 16px 3px rgba(255, 217, 0, 0.2);
+            }
             
             .cyclePoints, .damage, .trace, .block {
                 display: flex;

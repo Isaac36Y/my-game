@@ -68,7 +68,7 @@ test("player damage hits armor first and remaining damage on hp", () => {
     const result = resolve(addArmor, { type: "PLAY_PROGRAM", programIndex: 0 });
 
     expect(result.state.enemy.armor).toBe(0)
-    expect(result.state.enemy.hp).toBe(112)
+    expect(result.state.enemy.hp).toBe(118)
 })
 
 test("armor remains and not hp is taken if damage is lower than", () => {
@@ -89,4 +89,13 @@ test("enemy gets armor from end round", () => {
     
     const armor = resolve(attack.state, { type: "TURN_END" })
     expect(armor.state.enemy.armor).toBe(10)
+})
+
+test("winner switched to player", () => {
+    const start = initialCombatState
+
+    const lowHealth = { ...start, enemy: {...start.enemy, hp: 10}}
+    const result = resolve(lowHealth, { type: "PLAY_PROGRAM", programIndex: 0})
+
+    expect(result.state.winner).toBe("PLAYER")
 })

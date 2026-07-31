@@ -1,8 +1,9 @@
-import type { CombatState } from "./state";
+import { initialCombatState, type CombatState, type Winner } from "./state";
 
 export type Action = 
     | { readonly type: "PLAY_PROGRAM"; readonly programIndex: number }
-    | { readonly type: "TURN_END" };
+    | { readonly type: "TURN_END" }
+    | { readonly type: "RESET_GAME"};
 
 export type GameEvent =
     | { readonly type: "PROGRAM_USED"; readonly name: string }
@@ -17,7 +18,10 @@ export type GameEvent =
     | { readonly type: "CYCLE_SPENT"; readonly amount: number}
     | { readonly type: "CYCLE_INCREASE"; readonly amount: number}
     | { readonly type: "TAKE_DAMAGE"; readonly amount: number}
-    | { readonly type: "BUMP_TURN"};
+    | { readonly type: "BUMP_TURN"}
+    | { readonly type: "PLAYER_DIED"}
+    | {readonly type: "TRACE_MAX"}
+    | { readonly type: "ENEMY_DIED"};
 
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
@@ -31,7 +35,7 @@ export function resolve(
     switch (action.type) {
         case "PLAY_PROGRAM": {
             const program = state.programs[action.programIndex];
-
+            let winner: Winner = state.winner
             if (program.cyclePoints > state.cycles) {
                 return { state, events };
             }
@@ -57,6 +61,14 @@ export function resolve(
             events.push({ type: "DAMAGE_DEALT", amount: dmg });
             events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
             events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
+            if (state.enemy.hp - dmg <= 0) {
+                events.push({ type: "ENEMY_DIED" })
+                winner = "PLAYER"
+            }
+            if (newTrace >= state.enemy.maxTrace) {
+                events.push({ type: "TRACE_MAX" })
+                winner = "ENEMY"
+            }
             
             const nextState: CombatState = {
                 ...state,
@@ -67,6 +79,7 @@ export function resolve(
                     trace: newTrace,
                     armor
                 },
+                winner
             };
 
             return { state: nextState, events };
@@ -75,13 +88,16 @@ export function resolve(
             const cyclesToThree = 3 - state.cycles
             let playerHp = state.player.hp;
             let enemyArmor = state.enemy.armor;
+            let winner: Winner = state.winner
             const intentIndex = state.enemy.intentIndex
             const intent = state.enemy.intent[intentIndex]
+
             switch (intent.type) {
                 case "ATTACK": {
                     const dmg = intent.damage;
                     playerHp = Math.max(0, playerHp - dmg);
                     events.push({ type: "TAKE_DAMAGE", amount: dmg });
+                    events.push({ type: "PLAYER_DIED" })
                     break
                 }
                 case "ARMOR": {
@@ -89,9 +105,13 @@ export function resolve(
                     events.push({ type: "ARMOR_GAINED", amount: enemyArmor });
                 }
             }
-            
+            if (playerHp <= 0) {
+                events.push({ type: "PLAYER_DIED" })
+                winner = "ENEMY"
+            }
             events.push({ type: "BUMP_TURN" })
             events.push({ type: "CYCLE_INCREASE", amount: cyclesToThree })
+
 
             const nextState: CombatState = {
                 ...state,
@@ -105,10 +125,14 @@ export function resolve(
                     armor: enemyArmor
                 },
                 cycles: 3,
-                turn: state.turn + 1
+                turn: state.turn + 1,
+                winner
             }
 
             return { state: nextState, events}
+        }
+        case "RESET_GAME": {
+            return { state: initialCombatState, events }
         }
     }
 }

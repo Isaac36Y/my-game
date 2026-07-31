@@ -3,6 +3,7 @@ export interface Enemy {
     readonly maxHp: number;
     readonly armor: number;
     readonly trace: number;
+    readonly maxTrace: number;
     readonly intent: readonly Intent[];
     readonly intentIndex: number;
 }

@@ -9,9 +9,23 @@ const adapter = (wrapper: ResolveResult, action: Action) => resolve(wrapper.stat
 export function Combat() {
     const [combat, dispatch] = useReducer(adapter, { state: initialCombatState, events: []})
     const { state } = combat
+    const endCombat = state.winner !== "NULL"
+    let winnerHead: string
+    let roundEndReason: string
+    if (endCombat) {
+        winnerHead = state.winner === "PLAYER" || "NULL" ? "You Win!" : "Game Over..."
+        
+    }
+    
 
     return (
         <>
+            <div className={styles.backdrop} style={endCombat ? {display: "flex"} : {display: 'none'}}></div>
+            <div className={styles.endGameModule} style={endCombat ? {display: "flex"} : {display: 'none'}}>
+                <h2>{winnerHead}</h2>
+                <p>{roundEndReason}</p>
+                <button type="button" onClick={() => dispatch({ type: "RESET_GAME" })}>Start Over</button>
+            </div>
             <div className={`${styles.header} title`}>
                 <h1>Access Intrusion</h1>
             </div >
@@ -25,7 +39,7 @@ export function Combat() {
                         </div>
                         <p className={styles.armor}><span><ShieldCog />Armor:</span> {state.enemy.armor}</p>
                         <p><span><Waypoints />Intent:</span> {state.enemy.intent[state.enemy.intentIndex].type}</p>
-                        <p><span><AudioLines />Trace:</span> {state.enemy.trace} / 60 </p>
+                        <p><span><AudioLines />Trace:</span> {state.enemy.trace} / {state.enemy.maxTrace} </p>
                     </div>
                 </div>
                 <div className={`${styles.player}`}>
@@ -50,10 +64,10 @@ export function Combat() {
                         {state.programs.map((program, key) => (
                             <button key={key} className={styles.programBtn} onClick={() => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
                                 <span className={styles.name}>{program.name}</span>
-                                <span className={styles.damage}><Cpu /> {program.damage} </span>
+                                <span className={styles.damage}><Cpu /> {program.damage} <span>damage</span> </span>
                                 <span className={styles.trace}><AudioLines /> {program.trace} </span>
                                 <span className={styles.cyclePoints}><Zap />{program.cyclePoints}</span>
-                                <span className={styles.block}><Shield /> {program.block} </span>
+                                <span className={styles.block}><Shield /> {program.block} <span>block</span></span>
                             </button>
                         ))}
                     </div>

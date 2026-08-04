@@ -65,7 +65,10 @@ export function Combat() {
                     </div>
                     <div className={styles.programs}>
                         {state.programs.map((program, key) => (
-                            <button key={key} className={styles.programBtn} onClick={() => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
+                            <button 
+                            key={key} 
+                            className={`${styles.programBtn} ${program.patched ? styles.disabled : ''}`}
+                            onClick={() => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
                                 <span className={styles.name}>{program.name}</span>
                                 <span className={styles.damage}><Cpu /> {program.damage} <span>damage</span> </span>
                                 <span className={styles.trace}><AudioLines /> {program.trace} </span>

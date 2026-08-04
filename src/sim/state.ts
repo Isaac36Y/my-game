@@ -13,6 +13,7 @@ export interface Program {
     readonly trace: number;
     readonly block: number;
     readonly combatUses: number;
+    readonly patched: boolean;
 }
 
 export type Winner = "PLAYER" | "ENEMY" | "NULL"
@@ -49,12 +50,12 @@ export const initialCombatState: CombatState = {
     turn: 1,
     cycles: 3,
     programs: [
-        { name: "Buffer Overflow", damage: 12, cyclePoints: 2, trace: 10, block: 0, combatUses: 0 }, // armor answer
-        { name: "Ping",            damage: 4,  cyclePoints: 1, trace: 2, block: 4, combatUses: 0 }, // silent-but-weak
-        { name: "Scrub",           damage: 0,  cyclePoints: 1, trace: -15, block: 0, combatUses: 0 }, // trace reducer
-        { name: "Fork Bomb",       damage: 9,  cyclePoints: 2, trace: 12, block: 4, combatUses: 0 }, // repeatable damage
-        { name: "Rootkit",         damage: 6,  cyclePoints: 1, trace: 8, block: 0, combatUses: 0 }, // utility / pressure
-        { name: "Kill Switch",         damage: 22,  cyclePoints: 3, trace: 20, block: 0, combatUses: 0 }, // patch interrupt
+        { name: "Buffer Overflow", damage: 12, cyclePoints: 2, trace: 10, block: 0, combatUses: 0, patched: false }, // armor answer
+        { name: "Ping", damage: 4, cyclePoints: 1, trace: 2, block: 4, combatUses: 0, patched: false }, // silent-but-weak
+        { name: "Scrub", damage: 0, cyclePoints: 1, trace: -15, block: 0, combatUses: 0, patched: false }, // trace reducer
+        { name: "Fork Bomb", damage: 9, cyclePoints: 2, trace: 12, block: 4, combatUses: 0, patched: false }, // repeatable damage
+        { name: "Rootkit", damage: 6, cyclePoints: 1, trace: 8, block: 0, combatUses: 0, patched: false }, // utility / pressure
+        { name: "Kill Switch", damage: 22, cyclePoints: 3, trace: 20, block: 0, combatUses: 0, patched: false }, // patch interrupt
     ],
     winner: "NULL"
 };

@@ -15,13 +15,14 @@ export type GameEvent =
     | { readonly type: "ARMOR_HIT"; readonly amount: number }
     | { readonly type: "ARMOR_BROKE"; readonly amount: number }
     | { readonly type: "TRACE_GAINED"; readonly amount: number }
-    | { readonly type: "CYCLE_SPENT"; readonly amount: number}
-    | { readonly type: "CYCLE_INCREASE"; readonly amount: number}
-    | { readonly type: "TAKE_DAMAGE"; readonly amount: number}
-    | { readonly type: "BUMP_TURN"}
-    | { readonly type: "PLAYER_DIED"}
-    | {readonly type: "TRACE_MAX"}
-    | { readonly type: "ENEMY_DIED"};
+    | { readonly type: "CYCLE_SPENT"; readonly amount: number }
+    | { readonly type: "CYCLE_INCREASE"; readonly amount: number }
+    | { readonly type: "TAKE_DAMAGE"; readonly amount: number }
+    | { readonly type: "BUMP_TURN" }
+    | { readonly type: "PATCHED_PROGRAM" }
+    | { readonly type: "PLAYER_DIED" }
+    | { readonly type: "TRACE_MAX" }
+    | { readonly type: "ENEMY_DIED" };
 
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
@@ -35,10 +36,18 @@ export function resolve(
     switch (action.type) {
         case "PLAY_PROGRAM": {
             const program = state.programs[action.programIndex];
+            const programUses = program.combatUses + 1
+            
+               
             let winner: Winner = state.winner
             if (program.cyclePoints > state.cycles) {
                 return { state, events };
             }
+            if (program.patched === true) {
+                return { state, events }
+            }
+
+            let programPatched = false
             
             let dmg = program.damage
             let armor = state.enemy.armor
@@ -70,7 +79,12 @@ export function resolve(
                 events.push({ type: "TRACE_MAX" })
                 winner = "ENEMY"
             }
-            
+            // only happens if no winner from this turn
+            if (programUses >= 2) {
+                events.push({ type: "PATCHED_PROGRAM" })
+                programPatched = true
+            }
+
             const nextState: CombatState = {
                 ...state,
                 cycles: state.cycles - program.cyclePoints,
@@ -84,9 +98,14 @@ export function resolve(
                     trace: newTrace,
                     armor
                 },
+                programs: state.programs.map((program, index) => 
+                    index === action.programIndex 
+                    ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
+                    : program 
+                ),
                 winner
             };
-
+            console.log(nextState)
             return { state: nextState, events };
         }
         case "TURN_END": {

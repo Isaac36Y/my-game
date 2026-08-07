@@ -108,7 +108,7 @@ export function Combat() {
                         {state.programs.map((program, key) => (
                             <div 
                             key={key} 
-                            className={`${styles.programBtn} ${ATTRIBUTES[state.pending?.attribute] ? styles[toCamel(state.pending.attribute)] : ''} ${program.patched ? styles.patched : ''}`}
+                            className={`${styles.programBtn} ${ATTRIBUTES[state.pending?.attributeQueue[0]] ? styles[toCamel(state.pending.attributeQueue[0])] : ''} ${program.patched ? styles.patched : ''}`}
                             onClick={state.pending ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
                                 <div className={styles.name}>{program.name}</div>
                                 <div className={styles.damage}><Cpu /> {program.damage} <span>damage</span> </div>

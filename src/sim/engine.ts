@@ -90,7 +90,7 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
         ),
         winner
     };
-
+    console.log(nextState)
     return { state: nextState, events };
 }
 
@@ -114,7 +114,7 @@ export function resolve(
             if (needsTarget.length > 0) {
                 const nextState: CombatState = {
                     ...state,
-                    pending: {attribute: needsTarget[0], sourceIndex: action.programIndex}
+                    pending: {attributeQueue: needsTarget, sourceIndex: action.programIndex}
                 }
                 console.log(state)
                 return {state: nextState, events}
@@ -124,24 +124,13 @@ export function resolve(
             return playProgram(state, action.programIndex)
         }
         case "SELECT_PENDING": {
-            switch (state.pending.attribute) {
-                case "PATCH_BUMP": {
-                    const program = state.programs[action.programIndex]
+            let nextState = ATTRIBUTES[state.pending.attributeQueue[0]].effect(state, action.programIndex)
 
-                    if (!program.patched) return { state, events }
-
-                    const nextState: CombatState = {
-                        ...state,
-                        programs: state.programs.map((program, index) => 
-                            index === action.programIndex
-                            ? {...program, combatUses: program.combatUses - 1, patched: false} 
-                            : program 
-                        ),
-                        pending: null
-                    }
-                    return playProgram(nextState, state.pending.sourceIndex)
-                }
-                
+            if (nextState.pending.attributeQueue.length === 0) {
+                nextState = {...nextState, pending: null}
+                return playProgram(nextState, state.pending.sourceIndex)
+            }else {
+                return { state: nextState, events}
             }
         }
         case "TURN_END": {

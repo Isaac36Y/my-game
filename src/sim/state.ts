@@ -25,7 +25,7 @@ export interface Program {
 }
 
 export interface PendingSelection {
-    readonly attribute: AttributeId;
+    readonly attributeQueue: Array<AttributeId>;
     readonly sourceIndex: number;   // the program you clicked first
 }
 
@@ -97,7 +97,7 @@ export const initialCombatState: CombatState = {
             combatUses: 0,
             patched: false,
             attributes: [
-                "PATCH_BUMP"
+                "PATCH_BUMP", "AMPLIFY"
             ]
         }, // trace reducer
         {

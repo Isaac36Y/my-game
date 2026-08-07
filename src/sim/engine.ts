@@ -1,7 +1,9 @@
+import { ATTRIBUTES, type AttributeId } from "./attributes";
 import { initialCombatState, type CombatState, type Winner } from "./state";
 
 export type Action = 
     | { readonly type: "PLAY_PROGRAM"; readonly programIndex: number }
+    | { readonly type: "SELECT_PENDING"; readonly programIndex: number}
     | { readonly type: "TURN_END" }
     | { readonly type: "RESET_GAME"};
 
@@ -26,6 +28,72 @@ export type GameEvent =
 
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
+function playProgram(state: CombatState, programIndex: number): ResolveResult {
+    const events: GameEvent[] = [];
+    const program = state.programs[programIndex];
+    const programUses = program.combatUses + 1
+    let winner: Winner = state.winner
+    let programPatched = false
+    let dmg = program.damage
+    let armor = state.enemy.armor
+
+    if (armor > 0) {
+        if (dmg >= armor) {
+            dmg = dmg - armor
+            events.push({ type: "ARMOR_BROKE", amount: armor });
+            armor = 0
+        }else if (dmg < armor) {
+            armor = armor - dmg
+            events.push({ type: "ARMOR_HIT", amount: dmg})
+            dmg = 0
+        }
+    }
+    const oldTrace = state.enemy.trace
+    const newTrace = Math.max(0, oldTrace + program.trace)
+
+    events.push({ type: "PROGRAM_USED", name: program.name });
+    if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
+    if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
+    if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
+    if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
+    if (state.enemy.hp - dmg <= 0) {
+        events.push({ type: "ENEMY_DIED" })
+        winner = "PLAYER"
+    }
+    if (newTrace >= state.enemy.maxTrace) {
+        events.push({ type: "TRACE_MAX" })
+        winner = "ENEMY"
+    }
+    // TODO: only happens if no winner from this turn
+    if (programUses >= 2) {
+        events.push({ type: "PATCHED_PROGRAM" })
+        programPatched = true
+    }
+
+    const nextState: CombatState = {
+        ...state,
+        cycles: state.cycles - program.cyclePoints,
+        player: {
+            ...state.player,
+            block: state.player.block + program.block
+        },
+        enemy: {
+            ...state.enemy,
+            hp: Math.max(0, state.enemy.hp - dmg),
+            trace: newTrace,
+            armor
+        },
+        programs: state.programs.map((program, index) => 
+            index === programIndex 
+            ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
+            : program 
+        ),
+        winner
+    };
+
+    return { state: nextState, events };
+}
+
 export function resolve(
     state: CombatState,
     action: Action,
@@ -35,78 +103,46 @@ export function resolve(
 
     switch (action.type) {
         case "PLAY_PROGRAM": {
+            if (state.pending) return
+            
             const program = state.programs[action.programIndex];
-            const programUses = program.combatUses + 1
-            
-               
-            let winner: Winner = state.winner
-            if (program.cyclePoints > state.cycles) {
-                return { state, events };
-            }
-            if (program.patched === true) {
-                return { state, events }
-            }
+            if (program.cyclePoints > state.cycles) return { state, events };
+            if (program.patched === true) return { state, events }
 
-            let programPatched = false
-            
-            let dmg = program.damage
-            let armor = state.enemy.armor
-
-            if (armor > 0) {
-                if (dmg >= armor) {
-                    dmg = dmg - armor
-                    events.push({ type: "ARMOR_BROKE", amount: armor });
-                    armor = 0
-                }else if (dmg < armor) {
-                    armor = armor - dmg
-                    events.push({ type: "ARMOR_HIT", amount: dmg})
-                    dmg = 0
+            const needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram)
+            console.log(needsTarget)
+            if (needsTarget.length > 0) {
+                const nextState: CombatState = {
+                    ...state,
+                    pending: {attribute: needsTarget[0], sourceIndex: action.programIndex}
                 }
-            }
-            const oldTrace = state.enemy.trace
-            const newTrace = Math.max(0, oldTrace + program.trace)
-
-            events.push({ type: "PROGRAM_USED", name: program.name });
-            if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
-            if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
-            if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
-            if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
-            if (state.enemy.hp - dmg <= 0) {
-                events.push({ type: "ENEMY_DIED" })
-                winner = "PLAYER"
-            }
-            if (newTrace >= state.enemy.maxTrace) {
-                events.push({ type: "TRACE_MAX" })
-                winner = "ENEMY"
-            }
-            // only happens if no winner from this turn
-            if (programUses >= 2) {
-                events.push({ type: "PATCHED_PROGRAM" })
-                programPatched = true
+                console.log(state)
+                return {state: nextState, events}
             }
 
-            const nextState: CombatState = {
-                ...state,
-                cycles: state.cycles - program.cyclePoints,
-                player: {
-                    ...state.player,
-                    block: state.player.block + program.block
-                },
-                enemy: {
-                    ...state.enemy,
-                    hp: Math.max(0, state.enemy.hp - dmg),
-                    trace: newTrace,
-                    armor
-                },
-                programs: state.programs.map((program, index) => 
-                    index === action.programIndex 
-                    ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
-                    : program 
-                ),
-                winner
-            };
-            console.log(nextState)
-            return { state: nextState, events };
+
+            return playProgram(state, action.programIndex)
+        }
+        case "SELECT_PENDING": {
+            switch (state.pending.attribute) {
+                case "PATCH_BUMP": {
+                    const program = state.programs[action.programIndex]
+
+                    if (!program.patched) return { state, events }
+
+                    const nextState: CombatState = {
+                        ...state,
+                        programs: state.programs.map((program, index) => 
+                            index === action.programIndex
+                            ? {...program, combatUses: program.combatUses - 1, patched: false} 
+                            : program 
+                        ),
+                        pending: null
+                    }
+                    return playProgram(nextState, state.pending.sourceIndex)
+                }
+                
+            }
         }
         case "TURN_END": {
             const cyclesToThree = 3 - state.cycles

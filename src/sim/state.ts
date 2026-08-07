@@ -24,6 +24,11 @@ export interface Program {
     readonly attributes: Attributes;
 }
 
+export interface PendingSelection {
+    readonly attribute: AttributeId;
+    readonly sourceIndex: number;   // the program you clicked first
+}
+
 export type Winner = 'PLAYER' | 'ENEMY' | 'NULL';
 
 // Combat
@@ -33,6 +38,7 @@ export interface CombatState {
     readonly turn: number;
     readonly cycles: number;
     readonly programs: readonly Program[];
+    readonly pending: PendingSelection | null;
     readonly winner: Winner;
 }
 
@@ -132,4 +138,5 @@ export const initialCombatState: CombatState = {
         }, // patch interrupt
     ],
     winner: 'NULL',
+    pending: null,
 };

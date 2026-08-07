@@ -7,6 +7,12 @@ import { ATTRIBUTES } from "../sim/attributes";
 
 
 const adapter = (wrapper: ResolveResult, action: Action) => resolve(wrapper.state, action)
+const toCamel = (str: string) => 
+    str
+    .toLowerCase()
+    .split('_')
+    .map((word, index) => index !== 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word)
+    .join('')
 
 function AttributeRender(program: Program) {
     const attributeArr = []
@@ -102,8 +108,8 @@ export function Combat() {
                         {state.programs.map((program, key) => (
                             <div 
                             key={key} 
-                            className={`${styles.programBtn} ${program.patched ? styles.disabled : ''}`}
-                            onClick={() => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
+                            className={`${styles.programBtn} ${ATTRIBUTES[state.pending?.attribute] ? styles[toCamel(state.pending.attribute)] : ''} ${program.patched ? styles.patched : ''}`}
+                            onClick={state.pending ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
                                 <div className={styles.name}>{program.name}</div>
                                 <div className={styles.damage}><Cpu /> {program.damage} <span>damage</span> </div>
                                 <div className={styles.trace}><AudioLines /> {program.trace} </div>

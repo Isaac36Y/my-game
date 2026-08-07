@@ -323,7 +323,7 @@
                 }
             }
             
-            &.disabled {
+            &.patched {
                 background-color: rgb(39, 39, 39);
 
                 &::after {
@@ -335,9 +335,26 @@
                     font-size: 2.5rem;
                     color: gray
                 }
+
+                &.patchBump {
+                    animation: target 1s linear infinite;
+                }
             }
+
             
         }
+    }
+}
+
+@keyframes target {
+    0% {
+        box-shadow: 0 0 8px 0 rgba(255, 217, 0, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 24px 4px rgba(255, 217, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 8px 0 rgba(255, 217, 0, 0.8);
     }
 }
 

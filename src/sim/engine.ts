@@ -89,7 +89,7 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
         ),
         winner
     };
-    console.log(nextState)
+
     return { state: nextState, events };
 }
 
@@ -110,13 +110,12 @@ export function resolve(
 
             let needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram && ATTRIBUTES[att].conditional(state))
 
-            console.log(needsTarget)
             if (needsTarget.length > 0) {
                 const nextState: CombatState = {
                     ...state,
                     pending: {attributeQueue: needsTarget, sourceIndex: action.programIndex}
                 }
-                console.log(state)
+
                 return {state: nextState, events}
             }
 

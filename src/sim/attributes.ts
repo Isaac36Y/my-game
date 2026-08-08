@@ -43,7 +43,7 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
     AMPLIFY: {
         id: "AMPLIFY",
         name: "Amplify",
-        description: "Choose a program. The next time you play that program this turn, it deals 50% more damage",
+        description: "Choose a program. For the rest of the turn, it deals 50% more damage",
         icon: 'public/images/amplify.jpeg',
         alt: "",
         needsProgram: true,

@@ -109,12 +109,18 @@ export function Combat() {
                             <div 
                             key={key} 
                             className={`${styles.programBtn} ${ATTRIBUTES[state.pending?.attributeQueue[0]] ? styles[toCamel(state.pending.attributeQueue[0])] : ''} ${program.patched ? styles.patched : ''}`}
-                            onClick={state.pending ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})}>
+                            onClick={state.pending 
+                                ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) 
+                                : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})
+                            }>
                                 <div className={styles.name}>{program.name}</div>
-                                <div className={styles.damage}><Cpu /> {program.damage} <span>damage</span> </div>
+                                <div 
+                                className={`${styles.damage}`}>
+                                    <Cpu /> <span className={`${Object.keys(program.endTurnQueue).includes('damage') ? styles.damageIncrease : ''}`}>{program.damage}</span> <span className={styles.label}>damage</span>
+                                </div>
                                 <div className={styles.trace}><AudioLines /> {program.trace} </div>
                                 <div className={styles.cyclePoints}><Zap />{program.cyclePoints}</div>
-                                <div className={styles.block}><Shield /> {program.block} <span>block</span></div>
+                                <div className={styles.block}><Shield /> {program.block} <span className={styles.label}>block</span></div>
                                 <div className={styles.attributes}> 
                                     {AttributeRender(program)}
                                 </div>

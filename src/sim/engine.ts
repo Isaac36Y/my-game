@@ -36,7 +36,6 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
     let programPatched = false
     let dmg = program.damage
     let armor = state.enemy.armor
-
     if (armor > 0) {
         if (dmg >= armor) {
             dmg = dmg - armor
@@ -109,7 +108,8 @@ export function resolve(
             if (program.cyclePoints > state.cycles) return { state, events };
             if (program.patched === true) return { state, events }
 
-            const needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram)
+            let needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram && ATTRIBUTES[att].conditional(state))
+
             console.log(needsTarget)
             if (needsTarget.length > 0) {
                 const nextState: CombatState = {
@@ -187,6 +187,7 @@ export function resolve(
                     intentIndex: (intentIndex + 1) % state.enemy.intent.length,
                     armor: enemyArmor
                 },
+                programs: state.programs.map(program => {return {...program, ...program.endTurnQueue, endTurnQueue: {} }}),
                 cycles: 3,
                 turn: state.turn + 1,
                 winner

@@ -21,6 +21,7 @@ export interface Program {
     readonly block: number;
     readonly combatUses: number;
     readonly patched: boolean;
+    readonly endTurnQueue: object;
     readonly attributes: Attributes;
 }
 
@@ -72,6 +73,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
 
             ]
@@ -84,6 +86,7 @@ export const initialCombatState: CombatState = {
             block: 4,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
 
             ]
@@ -96,6 +99,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
                 "PATCH_BUMP", "AMPLIFY"
             ]
@@ -108,6 +112,7 @@ export const initialCombatState: CombatState = {
             block: 4,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
 
             ]
@@ -120,6 +125,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
 
             ]
@@ -132,6 +138,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             combatUses: 0,
             patched: false,
+            endTurnQueue: {},
             attributes: [
 
             ]

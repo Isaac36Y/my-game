@@ -10,6 +10,7 @@ export interface AttributeDef {
     readonly icon: string;
     readonly alt: string;
     readonly needsProgram: boolean;
+    readonly conditional: (state: CombatState) => boolean;
     readonly effect: (state: CombatState, programIndex: number) => CombatState;
 }
 
@@ -21,6 +22,9 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
         icon: 'public/images/patch-bump-icon.jpg',
         alt: "System version upgrade",
         needsProgram: true,
+        conditional: (state) => {
+            return state.programs.filter(program => program.patched).length === 0 ? false : true
+        },
         effect: (state: CombatState, programIndex: number ) => {
             if (!state.programs[programIndex].patched) return state
 
@@ -43,14 +47,15 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
         icon: 'public/images/amplify.jpeg',
         alt: "",
         needsProgram: true,
+        conditional: () => true,
         effect: (state: CombatState, programIndex: number) => {
-            if (!state.programs[programIndex].patched) return state
 
             const nextState: CombatState = {
                 ...state,
                 programs: state.programs.map((program, index) => 
                     index === programIndex
-                    ? {...program, combatUses: program.combatUses - 1, patched: false} 
+                // instead of a function, manual set the new stats, then have some kind of storage for the old values and on turn end it rolls back to the old values
+                    ? {...program, damage: Math.ceil(program.damage * 1.5), endTurnQueue: {...program.endTurnQueue, damage: program.damage }} 
                     : program 
                 ),
                 pending: {...state.pending, attributeQueue: state.pending.attributeQueue.slice(1) }

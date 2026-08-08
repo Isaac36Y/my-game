@@ -255,13 +255,18 @@
                 flex-wrap: wrap;
                 row-gap: 0;
 
-                > span {
+                .label {
                     font-size: 0.65rem;
                     flex-basis: 100%;
                     text-transform: uppercase;
                     letter-spacing: 0.1rem;
                     text-align: center;
                 }
+            }
+
+            .damageIncrease {
+                color: rgb(0, 208, 0);
+                text-shadow: 0 0 16px rgb(0, 208, 0);
             }
 
             .attributes {
@@ -344,8 +349,6 @@
             &.amplify {
                 animation: target 1s linear infinite;
             }
-
-            
         }
     }
 }

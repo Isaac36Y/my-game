@@ -35,11 +35,39 @@
             gap: 1rem;
 
             .bar {
+                width: 200%;
+
+                &::-webkit-progress-value {
+                    background-color: red; 
+                }
+                &::-moz-progress-bar {
+                    background-color: red;
+                }
+            }
+        }
+
+        .trace {
+
+            .bar {
+
+                &::-webkit-progress-value {
+                    background-color: rgb(106, 106, 188); 
+                }
+                &::-moz-progress-bar {
+                    background-color: rgb(106, 106, 188);
+                }
+            }
+        }
+
+
+
+        .trace, .health {
+
+            .bar {
                 -webkit-appearance: none;
                 -moz-appearance: none;
                 appearance: none;
                 border: none;
-                width: 150%;
                 height: 15px;
                 border-radius: 10px;
                 background-color: #e0e0e0;
@@ -50,12 +78,10 @@
                 }
 
                 &::-webkit-progress-value {
-                    background-color: red; /* Blue fill */
                     border-radius: 10px;
-                    transition: width 0.3s ease; /* Smooth animation */
+                    transition: width 0.3s ease; 
                 }
                 &::-moz-progress-bar {
-                    background-color: #2563eb;
                     border-radius: 10px;
                 }
             }
@@ -208,6 +234,7 @@
 
             .name {
                 grid-column: 1 / 3;
+                text-align: center;
             }
 
             .trace, .cyclePoints {
@@ -228,15 +255,80 @@
                 flex-wrap: wrap;
                 row-gap: 0;
 
-                > span {
+                .label {
                     font-size: 0.65rem;
                     flex-basis: 100%;
                     text-transform: uppercase;
                     letter-spacing: 0.1rem;
+                    text-align: center;
+                }
+            }
+
+            .damageIncrease {
+                color: rgb(0, 208, 0);
+                text-shadow: 0 0 16px rgb(0, 208, 0);
+            }
+
+            .attributes {
+                grid-column: 1 / 3;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+
+                .attribute {
+                    position: relative;
+
+                    .placeholder, .img {
+                        margin-inline: auto;
+                        width: 3rem;
+                        height: 3rem;
+                        border: 1px solid black;
+                        border-radius: 0.6rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    
+                    .placeholder {
+                        background: repeating-linear-gradient(
+                            45deg,
+                            black,
+                            black 1px,
+                            transparent 1px, 
+                            transparent 3px
+                        );
+                    }
+
+                    .hint {
+                        position: absolute;
+                        top: -220%;
+                        left: 50%;
+                        translate: -50% 0;
+                        width: 15rem;
+                        height: fit-content;
+                        font-size: 0.8rem;
+                        background-color: tan;
+                        text-align: center;
+                        padding: 0.5rem 0.25rem;
+                        border-radius: 0.4rem;
+                        display: none;
+                        flex-direction: column;
+                        gap: 0.25rem;
+
+                        .title {
+                            font-weight: 700;
+                            font-size: 1rem;
+                        }
+                    }
+
+                    .hint:has(+ .img:hover) {
+                        display: block;
+
+                    }
+
                 }
             }
             
-            &.disabled {
+            &.patched {
                 background-color: rgb(39, 39, 39);
 
                 &::after {
@@ -248,9 +340,28 @@
                     font-size: 2.5rem;
                     color: gray
                 }
+
+                &.patchBump {
+                    animation: target 1s linear infinite;
+                }
             }
-            
+
+            &.amplify {
+                animation: target 1s linear infinite;
+            }
         }
+    }
+}
+
+@keyframes target {
+    0% {
+        box-shadow: 0 0 8px 0 rgba(255, 217, 0, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 24px 4px rgba(255, 217, 0, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 8px 0 rgba(255, 217, 0, 0.8);
     }
 }
 

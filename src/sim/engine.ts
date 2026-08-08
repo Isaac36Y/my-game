@@ -1,7 +1,9 @@
+import { ATTRIBUTES, type AttributeId } from "./attributes";
 import { initialCombatState, type CombatState, type Winner } from "./state";
 
 export type Action = 
     | { readonly type: "PLAY_PROGRAM"; readonly programIndex: number }
+    | { readonly type: "SELECT_PENDING"; readonly programIndex: number}
     | { readonly type: "TURN_END" }
     | { readonly type: "RESET_GAME"};
 
@@ -23,14 +25,18 @@ export type GameEvent =
     | { readonly type: "PLAYER_DIED" }
     | { readonly type: "TRACE_MAX" }
     | { readonly type: "ENEMY_DIED" };
+    | { readonly type: "CYCLE_SPENT"; readonly amount: number }
+    | { readonly type: "CYCLE_INCREASE"; readonly amount: number }
+    | { readonly type: "TAKE_DAMAGE"; readonly amount: number }
+    | { readonly type: "BUMP_TURN" }
+    | { readonly type: "PATCHED_PROGRAM" }
+    | { readonly type: "PLAYER_DIED" }
+    | { readonly type: "TRACE_MAX" }
+    | { readonly type: "ENEMY_DIED" };
 
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
-export function resolve(
-    state: CombatState,
-    action: Action,
-): ResolveResult {
-    
+function playProgram(state: CombatState, programIndex: number): ResolveResult {
     const events: GameEvent[] = [];
 
     switch (action.type) {
@@ -65,7 +71,107 @@ export function resolve(
             }
             const oldTrace = state.enemy.trace
             const newTrace = Math.max(0, oldTrace + program.trace)
+    const program = state.programs[programIndex];
+    const programUses = program.combatUses + 1
+    let winner: Winner = state.winner
+    let programPatched = false
+    let dmg = program.damage
+    let armor = state.enemy.armor
+    if (armor > 0) {
+        if (dmg >= armor) {
+            dmg = dmg - armor
+            events.push({ type: "ARMOR_BROKE", amount: armor });
+            armor = 0
+        }else if (dmg < armor) {
+            armor = armor - dmg
+            events.push({ type: "ARMOR_HIT", amount: dmg})
+            dmg = 0
+        }
+    }
+    const oldTrace = state.enemy.trace
+    const newTrace = Math.max(0, oldTrace + program.trace)
 
+    events.push({ type: "PROGRAM_USED", name: program.name });
+    if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
+    if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
+    if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
+    if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
+    if (state.enemy.hp - dmg <= 0) {
+        events.push({ type: "ENEMY_DIED" })
+        winner = "PLAYER"
+    }
+    if (newTrace >= state.enemy.maxTrace) {
+        events.push({ type: "TRACE_MAX" })
+        winner = "ENEMY"
+    }
+    // TODO: only happens if no winner from this turn
+    if (programUses >= 2) {
+        events.push({ type: "PATCHED_PROGRAM" })
+        programPatched = true
+    }
+
+    const nextState: CombatState = {
+        ...state,
+        cycles: state.cycles - program.cyclePoints,
+        player: {
+            ...state.player,
+            block: state.player.block + program.block
+        },
+        enemy: {
+            ...state.enemy,
+            hp: Math.max(0, state.enemy.hp - dmg),
+            trace: newTrace,
+            armor
+        },
+        programs: state.programs.map((program, index) => 
+            index === programIndex 
+            ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
+            : program 
+        ),
+        winner
+    };
+
+    return { state: nextState, events };
+}
+
+export function resolve(
+    state: CombatState,
+    action: Action,
+): ResolveResult {
+    
+    const events: GameEvent[] = [];
+
+    switch (action.type) {
+        case "PLAY_PROGRAM": {
+            if (state.pending) return
+            
+            const program = state.programs[action.programIndex];
+            if (program.cyclePoints > state.cycles) return { state, events };
+            if (program.patched === true) return { state, events }
+
+            let needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram && ATTRIBUTES[att].conditional(state))
+
+            if (needsTarget.length > 0) {
+                const nextState: CombatState = {
+                    ...state,
+                    pending: {attributeQueue: needsTarget, sourceIndex: action.programIndex}
+                }
+
+                return {state: nextState, events}
+            }
+
+
+            return playProgram(state, action.programIndex)
+        }
+        case "SELECT_PENDING": {
+            let nextState = ATTRIBUTES[state.pending.attributeQueue[0]].effect(state, action.programIndex)
+
+            if (nextState.pending.attributeQueue.length === 0) {
+                nextState = {...nextState, pending: null}
+                return playProgram(nextState, state.pending.sourceIndex)
+            }else {
+                return { state: nextState, events}
+            }
             events.push({ type: "PROGRAM_USED", name: program.name });
             if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
             if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
@@ -162,6 +268,7 @@ export function resolve(
                     intentIndex: (intentIndex + 1) % state.enemy.intent.length,
                     armor: enemyArmor
                 },
+                programs: state.programs.map(program => {return {...program, ...program.endTurnQueue, endTurnQueue: {} }}),
                 cycles: 3,
                 turn: state.turn + 1,
                 winner

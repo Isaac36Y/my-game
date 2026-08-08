@@ -27,9 +27,11 @@ test("ensuring trace direction and that it cant go under 0", () => {
 
     const forkBomb = resolve(start, { type: "PLAY_PROGRAM", programIndex: 3 });
     const scrub = resolve(forkBomb.state, { type: "PLAY_PROGRAM", programIndex: 2 });
-
+    // scrubPending because scrubs attribute sends it into a pending mode
+    const scrubPending = resolve(scrub.state, {type: "SELECT_PENDING", programIndex: 1})
+    
     expect(forkBomb.state.enemy.trace).toBe(12)
-    expect(scrub.state.enemy.trace).toBe(0)
+    expect(scrubPending.state.enemy.trace).toBe(0)
 })
 
 test("ending turn resets cycles and bumps turn", () => {

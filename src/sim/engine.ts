@@ -25,52 +25,11 @@ export type GameEvent =
     | { readonly type: "PLAYER_DIED" }
     | { readonly type: "TRACE_MAX" }
     | { readonly type: "ENEMY_DIED" };
-    | { readonly type: "CYCLE_SPENT"; readonly amount: number }
-    | { readonly type: "CYCLE_INCREASE"; readonly amount: number }
-    | { readonly type: "TAKE_DAMAGE"; readonly amount: number }
-    | { readonly type: "BUMP_TURN" }
-    | { readonly type: "PATCHED_PROGRAM" }
-    | { readonly type: "PLAYER_DIED" }
-    | { readonly type: "TRACE_MAX" }
-    | { readonly type: "ENEMY_DIED" };
 
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
 function playProgram(state: CombatState, programIndex: number): ResolveResult {
     const events: GameEvent[] = [];
-
-    switch (action.type) {
-        case "PLAY_PROGRAM": {
-            const program = state.programs[action.programIndex];
-            const programUses = program.combatUses + 1
-            
-               
-            let winner: Winner = state.winner
-            if (program.cyclePoints > state.cycles) {
-                return { state, events };
-            }
-            if (program.patched === true) {
-                return { state, events }
-            }
-
-            let programPatched = false
-            
-            let dmg = program.damage
-            let armor = state.enemy.armor
-
-            if (armor > 0) {
-                if (dmg >= armor) {
-                    dmg = dmg - armor
-                    events.push({ type: "ARMOR_BROKE", amount: armor });
-                    armor = 0
-                }else if (dmg < armor) {
-                    armor = armor - dmg
-                    events.push({ type: "ARMOR_HIT", amount: dmg})
-                    dmg = 0
-                }
-            }
-            const oldTrace = state.enemy.trace
-            const newTrace = Math.max(0, oldTrace + program.trace)
     const program = state.programs[programIndex];
     const programUses = program.combatUses + 1
     let winner: Winner = state.winner
@@ -172,47 +131,6 @@ export function resolve(
             }else {
                 return { state: nextState, events}
             }
-            events.push({ type: "PROGRAM_USED", name: program.name });
-            if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
-            if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
-            if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
-            if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
-            if (state.enemy.hp - dmg <= 0) {
-                events.push({ type: "ENEMY_DIED" })
-                winner = "PLAYER"
-            }
-            if (newTrace >= state.enemy.maxTrace) {
-                events.push({ type: "TRACE_MAX" })
-                winner = "ENEMY"
-            }
-            // only happens if no winner from this turn
-            if (programUses >= 2) {
-                events.push({ type: "PATCHED_PROGRAM" })
-                programPatched = true
-            }
-
-            const nextState: CombatState = {
-                ...state,
-                cycles: state.cycles - program.cyclePoints,
-                player: {
-                    ...state.player,
-                    block: state.player.block + program.block
-                },
-                enemy: {
-                    ...state.enemy,
-                    hp: Math.max(0, state.enemy.hp - dmg),
-                    trace: newTrace,
-                    armor
-                },
-                programs: state.programs.map((program, index) => 
-                    index === action.programIndex 
-                    ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
-                    : program 
-                ),
-                winner
-            };
-            console.log(nextState)
-            return { state: nextState, events };
         }
         case "TURN_END": {
             const cyclesToThree = 3 - state.cycles

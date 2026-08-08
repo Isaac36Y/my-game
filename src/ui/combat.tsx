@@ -113,6 +113,7 @@ export function Combat() {
                                 ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) 
                                 : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})
                             }>
+                                <div className={styles.type}>{program.type}</div>
                                 <div className={styles.name}>{program.name}</div>
                                 <div 
                                 className={`${styles.damage}`}>

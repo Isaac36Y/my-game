@@ -13,8 +13,12 @@ export type Attributes =
     | readonly [AttributeId, AttributeId]
     | readonly [AttributeId, AttributeId, AttributeId];
 
+export type ProgramType = 
+    | "Exploit" | "Script"
+
 export interface Program {
     readonly name: string;
+    readonly type: ProgramType;
     readonly damage: number;
     readonly cyclePoints: number;
     readonly trace: number;
@@ -67,6 +71,7 @@ export const initialCombatState: CombatState = {
     programs: [
         {
             name: 'Buffer Overflow',
+            type: "Exploit",
             damage: 12,
             cyclePoints: 2,
             trace: 10,
@@ -80,6 +85,7 @@ export const initialCombatState: CombatState = {
         }, // armor answer
         {
             name: 'Ping',
+            type: "Script",
             damage: 4,
             cyclePoints: 1,
             trace: 2,
@@ -93,9 +99,10 @@ export const initialCombatState: CombatState = {
         }, // silent-but-weak
         {
             name: 'Scrub',
+            type: "Script",
             damage: 0,
             cyclePoints: 1,
-            trace: -15,
+            trace: -18,
             block: 0,
             combatUses: 0,
             patched: false,
@@ -106,9 +113,10 @@ export const initialCombatState: CombatState = {
         }, // trace reducer
         {
             name: 'Fork Bomb',
+            type: "Exploit",
             damage: 9,
             cyclePoints: 2,
-            trace: 12,
+            trace: 8,
             block: 4,
             combatUses: 0,
             patched: false,
@@ -119,9 +127,10 @@ export const initialCombatState: CombatState = {
         }, // repeatable damage
         {
             name: 'Rootkit',
+            type: "Exploit",
             damage: 6,
             cyclePoints: 1,
-            trace: 8,
+            trace: 5,
             block: 0,
             combatUses: 0,
             patched: false,
@@ -132,9 +141,10 @@ export const initialCombatState: CombatState = {
         }, // utility / pressure
         {
             name: 'Kill Switch',
+            type: "Exploit",
             damage: 22,
             cyclePoints: 3,
-            trace: 20,
+            trace: 15,
             block: 0,
             combatUses: 0,
             patched: false,

@@ -16,6 +16,8 @@ export type Attributes =
 export type ProgramType = 
     | "Exploit" | "Script"
 
+export type PermaPatch = null | "QUEUED" | "PATCHED"
+
 export interface Program {
     readonly name: string;
     readonly type: ProgramType;
@@ -26,7 +28,7 @@ export interface Program {
     readonly block: number;
     readonly patchChance: number;
     readonly patched: boolean;
-    readonly permaPatched: boolean;
+    readonly permaPatched: PermaPatch;
     readonly endTurnQueue: object;
     readonly attributes: Attributes;
 }
@@ -83,7 +85,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             patchChance: 1.1,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
 
@@ -99,7 +101,7 @@ export const initialCombatState: CombatState = {
             block: 4,
             patchChance: 0.5,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
 
@@ -115,7 +117,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             patchChance: 1.5,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
                 "PATCH_BUMP", "AMPLIFY"
@@ -131,7 +133,7 @@ export const initialCombatState: CombatState = {
             block: 4,
             patchChance: 0.8,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
 
@@ -147,7 +149,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             patchChance: 0.4,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
 
@@ -163,7 +165,7 @@ export const initialCombatState: CombatState = {
             block: 0,
             patchChance: 2,
             patched: false,
-            permaPatched: false,
+            permaPatched: null,
             endTurnQueue: {},
             attributes: [
 

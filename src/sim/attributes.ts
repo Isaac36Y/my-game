@@ -32,7 +32,7 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
                 ...state,
                 programs: state.programs.map((program, index) => 
                     index === programIndex
-                    ? {...program, patchChance: 5, patched: false} 
+                    ? {...program, permaPatched: "QUEUED", patchChance: 5, patched: false} 
                     : program 
                 ),
                 pending: {...state.pending, attributeQueue: state.pending.attributeQueue.slice(1) }
@@ -55,7 +55,7 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
                 programs: state.programs.map((program, index) => 
                     index === programIndex
                 // instead of a function, manual set the new stats, then have some kind of storage for the old values and on turn end it rolls back to the old values
-                    ? {...program, damage: Math.ceil(program.damage * 1.5), endTurnQueue: {...program.endTurnQueue, damage: program.damage }} 
+                    ? {...program, damage: Math.ceil(program.damage * 1.5), endTurnQueue: {...program.endTurnQueue, damage: program.damage, }} 
                     : program 
                 ),
                 pending: {...state.pending, attributeQueue: state.pending.attributeQueue.slice(1) }

@@ -408,11 +408,8 @@
                 text-shadow: 0 0 16px rgb(0, 208, 0);
             }
             
-            &.patched {
-                
-
+            &.patched, &.permaPatched {
                 &::after {
-                    content: "PATCHED";
                     position: absolute;
                     top: 50%;
                     left: 50%;
@@ -427,13 +424,24 @@
                     border-radius: inherit;
                     background-color: rgba(39, 39, 39, 0.8);
                 }
-
+            }
+            &.patched {
+                &::after {
+                    content: "PATCHED";
+                }
                 &.patchBump {
                     animation: target 1s linear infinite;
                 }
             }
+            &.permaPatched {
+                &::after {
+                    content: "PERMA-PATCHED";
+                }
+            }
 
-            &.amplify {
+
+
+            &.amplify:not(.permaPatched) {
                 animation: target 1s linear infinite;
             }
         }

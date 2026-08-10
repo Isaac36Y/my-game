@@ -38,7 +38,10 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
     let dmg = program.damage
     let armor = state.enemy.armor
     const gettingPatched = getsPatched(mulberry.float, program.patchChance)
-    console.log(gettingPatched)
+    console.log(program.permaPatched)
+
+    const permaPatching = program.permaPatched === 'QUEUED' || program.permaPatched === "PATCHED"
+    console.log(permaPatching)
     if (armor > 0) {
         if (dmg >= armor) {
             dmg = dmg - armor
@@ -88,7 +91,7 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
         },
         programs: state.programs.map((program, index) => 
             index === programIndex 
-            ? {...program, patchChance: Math.min(5, program.patchChance + 1), patched: gettingPatched} 
+            ? {...program, patchChance: Math.min(5, program.patchChance + 1), patched: permaPatching ? false : gettingPatched, permaPatched: permaPatching ? "PATCHED" : null } 
             : program 
         ),
         winner
@@ -110,7 +113,7 @@ export function resolve(
             
             const program = state.programs[action.programIndex];
             if (program.cyclePoints > state.cycles) return { state, events };
-            if (program.patched === true) return { state, events }
+            if (program.patched === true || program.permaPatched === "PATCHED") return { state, events }
 
             let needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram && ATTRIBUTES[att].conditional(state))
 

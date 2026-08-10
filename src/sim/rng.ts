@@ -12,3 +12,9 @@ export function rollRange(seed: number, min: number, max: number) {
     const raw = min + (max - min) * seed
     return Math.round(raw)
 }
+
+export function getsPatched(seed: number, patchChance: number) {
+    const raw = 5 * seed
+    console.log(raw)
+    return patchChance > raw
+}

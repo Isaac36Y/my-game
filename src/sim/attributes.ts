@@ -32,7 +32,7 @@ export const ATTRIBUTES: Record<AttributeId, AttributeDef> = {
                 ...state,
                 programs: state.programs.map((program, index) => 
                     index === programIndex
-                    ? {...program, combatUses: program.combatUses - 1, patched: false} 
+                    ? {...program, patchChance: 5, patched: false} 
                     : program 
                 ),
                 pending: {...state.pending, attributeQueue: state.pending.attributeQueue.slice(1) }

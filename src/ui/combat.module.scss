@@ -331,7 +331,8 @@
             .attributes {
                 display: flex;
                 column-gap: 0.5rem;
-                
+                width: 100%;
+                justify-content: center;
                 padding: 0.5rem 0;
 
                 .attribute {
@@ -386,6 +387,12 @@
                     }
 
                 }
+
+                .patchChance {
+                    position: absolute;
+                    right: 1rem;
+                    bottom: 1rem;
+                }
             }
 
             //with icons
@@ -402,7 +409,7 @@
             }
             
             &.patched {
-                background-color: rgb(39, 39, 39);
+                
 
                 &::after {
                     content: "PATCHED";
@@ -411,7 +418,14 @@
                     left: 50%;
                     translate: -50% -50%;
                     font-size: 2.5rem;
-                    color: gray
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    color: rgb(199, 199, 199);
+                    width: 100%;
+                    height: 100%;
+                    border-radius: inherit;
+                    background-color: rgba(39, 39, 39, 0.8);
                 }
 
                 &.patchBump {

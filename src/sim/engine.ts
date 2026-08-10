@@ -1,4 +1,5 @@
 import { ATTRIBUTES, type AttributeId } from "./attributes";
+import { getsPatched, mulberry32 } from "./rng";
 import { initialCombatState, type CombatState, type Winner } from "./state";
 
 export type Action = 
@@ -29,13 +30,15 @@ export type GameEvent =
 export type ResolveResult = { state: CombatState; events: GameEvent[] }
 
 function playProgram(state: CombatState, programIndex: number): ResolveResult {
+    const mulberry = mulberry32(state.seed)
     const events: GameEvent[] = [];
     const program = state.programs[programIndex];
-    const programUses = program.combatUses + 1
     let winner: Winner = state.winner
     let programPatched = false
     let dmg = program.damage
     let armor = state.enemy.armor
+    const gettingPatched = getsPatched(mulberry.float, program.patchChance)
+    console.log(gettingPatched)
     if (armor > 0) {
         if (dmg >= armor) {
             dmg = dmg - armor
@@ -64,13 +67,14 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
         winner = "ENEMY"
     }
     // TODO: only happens if no winner from this turn
-    if (programUses >= 2) {
+    if (gettingPatched) {
         events.push({ type: "PATCHED_PROGRAM" })
         programPatched = true
     }
-
+    
     const nextState: CombatState = {
         ...state,
+        seed: mulberry.nextSeed,
         cycles: state.cycles - program.cyclePoints,
         player: {
             ...state.player,
@@ -84,12 +88,12 @@ function playProgram(state: CombatState, programIndex: number): ResolveResult {
         },
         programs: state.programs.map((program, index) => 
             index === programIndex 
-            ? {...program, combatUses: program.combatUses + 1, patched: programPatched} 
+            ? {...program, patchChance: Math.min(5, program.patchChance + 1), patched: gettingPatched} 
             : program 
         ),
         winner
     };
-
+console.log(nextState.programs)
     return { state: nextState, events };
 }
 

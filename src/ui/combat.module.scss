@@ -285,15 +285,18 @@
                 gap: 1rem;
                 border-bottom: 1px solid gray;
 
-                .damage, .block {
+                .damage, .block, .effect {
                     margin-block: auto;
                     font-size: var(--fs-lg);
                     flex-wrap: wrap;
                     row-gap: 0;
+                    height: 3.5rem;
                     border-radius: 0.6rem;
                     padding: 0.5rem 0.5rem;
                     line-height: 1;
                     box-shadow: 0 0 8px 0, 0 0 5px 0 inset;
+                    display: flex;
+                    align-items: center;
     
                     .label {
                         font-size: 0.65rem;
@@ -316,13 +319,20 @@
                     border: 1px solid rgb(97, 97, 169, 0.7);
                     
                 }
+                
+                .effect {
+                    background-color: rgba(182, 119, 0, 0.25);
+                    color: rgb(250, 164, 5);
+                    border: 1px solid rgb(250, 164, 5, 0.7);
+                }
             }
 
 
             .attributes {
                 display: flex;
                 column-gap: 0.5rem;
-                
+                width: 100%;
+                justify-content: center;
                 padding: 0.5rem 0;
 
                 .attribute {
@@ -377,6 +387,12 @@
                     }
 
                 }
+
+                .patchChance {
+                    position: absolute;
+                    right: 1rem;
+                    bottom: 1rem;
+                }
             }
 
             //with icons
@@ -393,7 +409,7 @@
             }
             
             &.patched {
-                background-color: rgb(39, 39, 39);
+                
 
                 &::after {
                     content: "PATCHED";
@@ -402,7 +418,14 @@
                     left: 50%;
                     translate: -50% -50%;
                     font-size: 2.5rem;
-                    color: gray
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    color: rgb(199, 199, 199);
+                    width: 100%;
+                    height: 100%;
+                    border-radius: inherit;
+                    background-color: rgba(39, 39, 39, 0.8);
                 }
 
                 &.patchBump {

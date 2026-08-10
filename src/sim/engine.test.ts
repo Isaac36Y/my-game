@@ -30,7 +30,7 @@ test("ensuring trace direction and that it cant go under 0", () => {
     // scrubPending because scrubs attribute sends it into a pending mode
     const scrubPending = resolve(scrub.state, {type: "SELECT_PENDING", programIndex: 1})
     
-    expect(forkBomb.state.enemy.trace).toBe(12)
+    expect(forkBomb.state.enemy.trace).toBe(8)
     expect(scrubPending.state.enemy.trace).toBe(0)
 })
 

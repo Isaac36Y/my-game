@@ -118,13 +118,21 @@ export function Combat() {
                                     </div>
                                 </div>
                                 <div className={styles.output}>
+                                    {program.damage > 0 &&
                                     <div className={`${styles.damage}`}>
                                         <Cpu /> <span className={`${Object.keys(program.endTurnQueue).includes('damage') ? styles.damageIncrease : ''}`}>{program.damage}</span> <span className={styles.label}>damage</span>
                                     </div>
+                                    }
+                                    {program.block > 0 && 
                                     <div className={styles.block}><Shield /> {program.block} <span className={styles.label}>block</span></div>
+                                    }
+                                    {program.effect && 
+                                        <div className={styles.effect}>{program.effect}</div>
+                                    }                          
                                 </div>
                                 <div className={styles.attributes}> 
                                     {AttributeRender(program, program.type)}
+                                    <p>patch chance</p>
                                 </div>
                             </div>
                         ))}

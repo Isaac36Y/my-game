@@ -14,10 +14,11 @@ const toCamel = (str: string) =>
     .map((word, index) => index !== 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word)
     .join('')
 
-function AttributeRender(program: Program) {
+function AttributeRender(program: Program, type: string) {
     const attributeArr = []
+    const amount = type === "Script" ? 2 : 0
 
-    for (let i = 0; i <= 2; i++) {
+    for (let i = 0; i <= amount; i++) {
         const attDef = ATTRIBUTES[program.attributes[i]]
 
         attDef
@@ -57,6 +58,9 @@ export function Combat() {
         }
     }
 
+    const typeClass = state.programs.map(program => program.type.toLowerCase())
+    const intentIndex = state.enemy.intentIndex
+
     return (
         <>
             <div className={styles.backdrop} style={endCombat ? {display: "flex"} : {display: 'none'}}></div>
@@ -70,64 +74,74 @@ export function Combat() {
             </div >
             <div className={`${styles.combatUI}`}>
                 <div className={`${styles.enemy}`}>
-                    <p className={`${styles.name}`}>Sentry-Class Enforcer</p>
+                    <p className={`${styles.name}`} style={state.enemy.intent[intentIndex].type === "ATTACK" ? {boxShadow: '0 0 80px 20px red'} : {boxShadow: '0 0 80px 20px var(--color-block)'}}>Sentry-Class Enforcer</p>
                     <div className={styles.stats}>
-                        <div className={styles.health}>
-                            <p className={styles.text}><span><Cpu />HP:</span> {state.enemy.hp} / {state.enemy.maxHp}</p>
+                        <p><span><Waypoints />Intent:</span> {state.enemy.intent[intentIndex].type} {state.enemy.intent[intentIndex].amount}</p>
+                    </div>
+                    <div className={styles.img}>
+                        <img src="../public/images/sentry-class-enforcer.jpeg" alt="" height={500}/>
+                    </div>
+                    <div className={styles.health}>
+                        <p className={styles.text}><span><Cpu />HP:</span> {state.enemy.hp} / {state.enemy.maxHp}</p>
+                        <div className={styles.bars}>
                             <progress className={styles.bar} max={ state.enemy.maxHp } value={ state.enemy.hp }></progress>
+                            <div className={styles.blockBar} style={state.enemy.armor > 0 ? {opacity: 1} : {opacity: 0}}><ShieldCog height={24}/>{state.enemy.armor}</div>
                         </div>
-                        <p className={styles.armor}><span><ShieldCog />Armor:</span> {state.enemy.armor}</p>
-                        <p><span><Waypoints />Intent:</span> {state.enemy.intent[state.enemy.intentIndex].type} {state.enemy.intent[state.enemy.intentIndex].amount}</p>
-                        <div className={styles.trace}>
-                            <p><span><AudioLines />Trace:</span> {state.enemy.trace} / {state.enemy.maxTrace}</p>
-                            <progress className={styles.bar} max={ state.enemy.maxTrace } value={ state.enemy.trace }></progress>
-                        </div>
-                        
                     </div>
                 </div>
                 <div className={`${styles.player}`}>
+                    <p className={styles.turn}><span>Turn:</span> {state.turn} </p>
                     <div className={styles.upperPlayer}>
-                        <div className={styles.left}>
-                            <div className={styles.health}>
-                                <p className={styles.text}><span>Player HP:</span> {state.player.hp} / {state.player.maxHp}</p>
-                                <progress className={styles.bar} max={ state.player.maxHp } value={ state.player.hp }></progress>
-                            </div>
-                            <div className={styles.stats}>
-                                <p><span><Zap />Cycles:</span> {state.cycles}</p>
-                                <p><span>Turn:</span> {state.turn} </p>
-                                <p><span><Shield />Block:</span> {state.player.block}</p>
-                            </div>
-                        </div>
-                        <div className={styles.right}>
-                            <button className={styles.endTurnBtn} type="button" onClick={() => dispatch({ type: "TURN_END" })}>
-                                End Turn
-                            </button>
+                        <div className={styles.stats}>
+                            <p><span><AudioLines />Trace:</span> {state.enemy.trace} / {state.enemy.maxTrace}</p>
+                            <p><span><Zap />Cycles:</span> {state.cycles}</p>
+                            <progress className={styles.bar} max={ state.enemy.maxTrace } value={ state.enemy.trace }></progress>
                         </div>
                     </div>
                     <div className={styles.programs}>
                         {state.programs.map((program, key) => (
                             <div 
                             key={key} 
-                            className={`${styles.programBtn} ${ATTRIBUTES[state.pending?.attributeQueue[0]] ? styles[toCamel(state.pending.attributeQueue[0])] : ''} ${program.patched ? styles.patched : ''}`}
+                            className={`${styles.programBtn} ${styles[typeClass[key]]} ${ATTRIBUTES[state.pending?.attributeQueue[0]] ? styles[toCamel(state.pending.attributeQueue[0])] : ''} ${program.patched ? styles.patched : ''}`}
                             onClick={state.pending 
                                 ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) 
                                 : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})
                             }>
-                                <div className={styles.type}>{program.type}</div>
-                                <div className={styles.name}>{program.name}</div>
-                                <div 
-                                className={`${styles.damage}`}>
-                                    <Cpu /> <span className={`${Object.keys(program.endTurnQueue).includes('damage') ? styles.damageIncrease : ''}`}>{program.damage}</span> <span className={styles.label}>damage</span>
+                                <div className={styles.intro}>
+                                    <div>
+                                        <div className={styles.type}>{program.type}</div>
+                                        <div className={styles.name}>{program.name}</div>
+                                    </div>
+                                    <div className={styles.cost}>
+                                        <div className={styles.cyclePoints}>{program.cyclePoints}<Zap size={20}/></div>
+                                        <div className={styles.trace}>{program.trace} trace</div>
+                                    </div>
                                 </div>
-                                <div className={styles.trace}><AudioLines /> {program.trace} </div>
-                                <div className={styles.cyclePoints}><Zap />{program.cyclePoints}</div>
-                                <div className={styles.block}><Shield /> {program.block} <span className={styles.label}>block</span></div>
+                                <div className={styles.output}>
+                                    <div className={`${styles.damage}`}>
+                                        <Cpu /> <span className={`${Object.keys(program.endTurnQueue).includes('damage') ? styles.damageIncrease : ''}`}>{program.damage}</span> <span className={styles.label}>damage</span>
+                                    </div>
+                                    <div className={styles.block}><Shield /> {program.block} <span className={styles.label}>block</span></div>
+                                </div>
                                 <div className={styles.attributes}> 
-                                    {AttributeRender(program)}
+                                    {AttributeRender(program, program.type)}
                                 </div>
                             </div>
                         ))}
                     </div>
+                    <div className={styles.lower}>
+                        <div className={styles.health}>
+                            <p className={styles.text}><span>Player HP:</span> {state.player.hp} / {state.player.maxHp}</p>
+                            <div className={styles.bars}>
+                                <progress className={`${styles.bar}`} max={ state.player.maxHp } value={ state.player.hp }></progress>
+                                <div className={styles.blockBar} style={state.player.block > 0 ? {opacity: 1} : {opacity: 0}}><Shield fill="white" height={24}/>{state.player.block}</div>
+                            </div>
+                        </div>
+                        <button className={styles.endTurnBtn} type="button" onClick={() => dispatch({ type: "TURN_END" })}>
+                            End Turn
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </>

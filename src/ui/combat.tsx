@@ -132,7 +132,7 @@ export function Combat() {
                                 </div>
                                 <div className={styles.attributes}> 
                                     {AttributeRender(program, program.type)}
-                                    <p>patch chance</p>
+                                    <p className={styles.patchChance}>pc: {(program.patchChance * 2) * 10}%</p>
                                 </div>
                             </div>
                         ))}

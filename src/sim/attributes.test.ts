@@ -1,5 +1,6 @@
 import { test, expect, describe } from "vitest";
 import { resolve } from "./engine";
+import { mulberry32 } from "./rng";
 import { initialCombatState, type CombatState, type Program } from "./state";
 
 // ---------------------------------------------------------------------------
@@ -35,8 +36,33 @@ const endTurn = (state: CombatState) => resolve(state, { type: "TURN_END" });
 
 const damages = (state: CombatState) => state.programs.map((p) => p.damage);
 
+/**
+ * A seed whose next `steps` patch rolls all land above 3. No program in this
+ * file reaches a patchChance of 3, so a run started here never patches by
+ * chance and these tests only see the patches they ask for.
+ */
+const calmSeed = (steps: number): number => {
+    for (let seed = 1; seed < 100_000; seed++) {
+        let cursor = seed;
+        let calm = true;
+        for (let i = 0; i < steps; i++) {
+            const roll = mulberry32(cursor);
+            if (5 * roll.float <= 3) {
+                calm = false;
+                break;
+            }
+            cursor = roll.nextSeed;
+        }
+        if (calm) return seed;
+    }
+    throw new Error("no calm seed found");
+};
+
+/** initialCombatState seeds itself randomly, so every test starts from here. */
+const calm: CombatState = { ...initialCombatState, seed: calmSeed(6) };
+
 /** Enough cycles that the cost gate never interferes with a multi-step test. */
-const roomy: CombatState = { ...initialCombatState, cycles: 20 };
+const roomy: CombatState = { ...calm, cycles: 20 };
 
 // ---------------------------------------------------------------------------
 // pending handshake
@@ -44,7 +70,7 @@ const roomy: CombatState = { ...initialCombatState, cycles: 20 };
 
 describe("pending handshake", () => {
     test("a program with a targeting attribute opens a selection instead of resolving", () => {
-        const result = play(initialCombatState, SCRUB);
+        const result = play(calm, SCRUB);
 
         expect(result.state.pending).not.toBeNull();
         expect(result.state.pending.sourceIndex).toBe(SCRUB);
@@ -52,25 +78,25 @@ describe("pending handshake", () => {
         // the source program has not run yet
         expect(result.state.cycles).toBe(3);
         expect(result.state.enemy.trace).toBe(0);
-        expect(result.state.programs[SCRUB].combatUses).toBe(0);
+        expect(result.state.programs[SCRUB].patchChance).toBe(1.5);
         expect(result.state.enemy.hp).toBe(120);
     });
 
     test("opening a selection emits no events", () => {
-        const result = play(initialCombatState, SCRUB);
+        const result = play(calm, SCRUB);
 
         expect(result.events).toEqual([]);
     });
 
     test("the queue only holds attributes whose conditional passes", () => {
         // nothing is patched, so PATCH_BUMP is filtered out
-        const result = play(initialCombatState, SCRUB);
+        const result = play(calm, SCRUB);
 
         expect(result.state.pending.attributeQueue).toEqual(["AMPLIFY"]);
     });
 
     test("the queue includes PATCH_BUMP once some program is patched", () => {
-        const start = withProgram(initialCombatState, PING, { patched: true });
+        const start = withProgram(calm, PING, { patched: true });
 
         const result = play(start, SCRUB);
 
@@ -82,7 +108,7 @@ describe("pending handshake", () => {
 
     test("a program whose attributes all fail their conditional plays immediately", () => {
         // PATCH_BUMP alone, with nothing patched -> no selection needed
-        const start = withProgram(initialCombatState, BUFFER_OVERFLOW, {
+        const start = withProgram(calm, BUFFER_OVERFLOW, {
             attributes: ["PATCH_BUMP"] as const,
         });
 
@@ -92,30 +118,28 @@ describe("pending handshake", () => {
         expect(result.state.enemy.hp).toBe(108);
         expect(result.state.enemy.trace).toBe(10);
         expect(result.state.cycles).toBe(1);
-        expect(result.state.programs[BUFFER_OVERFLOW].combatUses).toBe(1);
+        // playing rolls for a patch and bumps the chance for next time
+        expect(result.state.programs[BUFFER_OVERFLOW].patchChance).toBe(2.1);
     });
 
     test("resolving the last attribute clears pending and plays the source program", () => {
         const start: CombatState = {
-            ...initialCombatState,
-            enemy: { ...initialCombatState.enemy, trace: 20 },
+            ...calm,
+            enemy: { ...calm.enemy, trace: 20 },
         };
 
         const pending = play(start, SCRUB);
         const result = select(pending.state, PING);
 
         expect(result.state.pending).toBeNull();
-        // Scrub actually resolved: -15 trace, 1 cycle, one combat use
-        expect(result.state.enemy.trace).toBe(5);
+        // Scrub actually resolved: -18 trace, 1 cycle, one patch roll
+        expect(result.state.enemy.trace).toBe(2);
         expect(result.state.cycles).toBe(2);
-        expect(result.state.programs[SCRUB].combatUses).toBe(1);
+        expect(result.state.programs[SCRUB].patchChance).toBe(2.5);
     });
 
     test("a two-attribute queue needs two selections before the source resolves", () => {
-        const start = withProgram(initialCombatState, PING, {
-            patched: true,
-            combatUses: 2,
-        });
+        const start = withProgram(calm, PING, { patched: true });
 
         const pending = play(start, SCRUB);
         const first = select(pending.state, PING);
@@ -124,17 +148,17 @@ describe("pending handshake", () => {
         expect(first.state.pending).not.toBeNull();
         expect(first.state.pending.attributeQueue).toEqual(["AMPLIFY"]);
         expect(first.state.cycles).toBe(3);
-        expect(first.state.programs[SCRUB].combatUses).toBe(0);
+        expect(first.state.programs[SCRUB].patchChance).toBe(1.5);
 
         const second = select(first.state, ROOTKIT);
 
         expect(second.state.pending).toBeNull();
         expect(second.state.cycles).toBe(2);
-        expect(second.state.programs[SCRUB].combatUses).toBe(1);
+        expect(second.state.programs[SCRUB].patchChance).toBe(2.5);
     });
 
     test("sourceIndex survives every step of the queue", () => {
-        const start = withProgram(initialCombatState, PING, { patched: true });
+        const start = withProgram(calm, PING, { patched: true });
 
         const pending = play(start, SCRUB);
         const first = select(pending.state, PING);
@@ -144,14 +168,14 @@ describe("pending handshake", () => {
     });
 
     test("the attribute hits the selected program, the source is what resolves", () => {
-        const pending = play(initialCombatState, SCRUB);
+        const pending = play(calm, SCRUB);
         const result = select(pending.state, PING);
 
         // Ping was amplified but never played
         expect(result.state.programs[PING].damage).toBe(6);
-        expect(result.state.programs[PING].combatUses).toBe(0);
+        expect(result.state.programs[PING].patchChance).toBe(0.5);
         // Scrub is the program that ran
-        expect(result.state.programs[SCRUB].combatUses).toBe(1);
+        expect(result.state.programs[SCRUB].patchChance).toBe(2.5);
         expect(result.state.enemy.hp).toBe(120);
     });
 
@@ -165,39 +189,33 @@ describe("pending handshake", () => {
 // ---------------------------------------------------------------------------
 
 describe("PATCH_BUMP", () => {
-    test("a program patches on its second use and then refuses to play", () => {
-        const once = play(roomy, PING);
-        const twice = play(once.state, PING);
+    test("a patched program is stuck until a bump clears it", () => {
+        const start = withProgram(roomy, PING, { patched: true });
 
-        expect(twice.state.programs[PING].combatUses).toBe(2);
-        expect(twice.state.programs[PING].patched).toBe(true);
-        expect(twice.state.enemy.hp).toBe(112);
+        const blocked = play(start, PING);
+        expect(blocked.state).toEqual(start);
 
-        const thrice = play(twice.state, PING);
+        const pending = play(start, SCRUB);
+        const bumped = select(pending.state, PING); // PATCH_BUMP -> Ping
+        const amplified = select(bumped.state, ROOTKIT); // AMPLIFY -> elsewhere
 
-        expect(thrice.state.enemy.hp).toBe(112);
-        expect(thrice.state.cycles).toBe(twice.state.cycles);
-        expect(thrice.state.programs[PING].combatUses).toBe(2);
+        const replay = play(amplified.state, PING);
+
+        expect(replay.state.enemy.hp).toBe(116); // 120 - 4
     });
 
-    test("a bump clears patched and refunds one combat use", () => {
-        const start = withProgram(initialCombatState, PING, {
-            patched: true,
-            combatUses: 2,
-        });
+    test("a bump clears patched and maxes out patchChance", () => {
+        const start = withProgram(calm, PING, { patched: true });
 
         const pending = play(start, SCRUB);
         const result = select(pending.state, PING);
 
         expect(result.state.programs[PING].patched).toBe(false);
-        expect(result.state.programs[PING].combatUses).toBe(1);
+        expect(result.state.programs[PING].patchChance).toBe(5);
     });
 
     test("a bump leaves every other program alone", () => {
-        const start = withProgram(initialCombatState, PING, {
-            patched: true,
-            combatUses: 2,
-        });
+        const start = withProgram(calm, PING, { patched: true });
 
         const pending = play(start, SCRUB);
         const result = select(pending.state, PING);
@@ -210,29 +228,25 @@ describe("PATCH_BUMP", () => {
         );
     });
 
-    test("a bumped program becomes playable again", () => {
-        const once = play(roomy, PING);
-        const twice = play(once.state, PING);
-        expect(twice.state.programs[PING].patched).toBe(true);
+    test("a bump buys exactly one more use before the system patches it again", () => {
+        const start = withProgram(roomy, PING, { patched: true });
 
-        const pending = play(twice.state, SCRUB);
-        const bumped = select(pending.state, PING); // PATCH_BUMP -> Ping
-        const amplified = select(bumped.state, ROOTKIT); // AMPLIFY -> elsewhere
-
-        expect(amplified.state.programs[PING].patched).toBe(false);
-        expect(amplified.state.programs[PING].combatUses).toBe(1);
+        const pending = play(start, SCRUB);
+        const bumped = select(pending.state, PING);
+        const amplified = select(bumped.state, ROOTKIT);
 
         const replay = play(amplified.state, PING);
 
-        expect(replay.state.enemy.hp).toBe(108); // 112 - 4, unamplified
-        expect(replay.state.programs[PING].combatUses).toBe(2);
+        // the bump left patchChance at 5, so that use is a guaranteed re-patch
+        expect(replay.state.enemy.hp).toBe(116);
+        expect(replay.state.programs[PING].patched).toBe(true);
+
+        const blocked = play(replay.state, PING);
+        expect(blocked.state.enemy.hp).toBe(116);
     });
 
     test("bumping a program that is not patched re-prompts instead of advancing", () => {
-        const start = withProgram(initialCombatState, PING, {
-            patched: true,
-            combatUses: 2,
-        });
+        const start = withProgram(calm, PING, { patched: true });
 
         const pending = play(start, SCRUB);
         const result = select(pending.state, FORK_BOMB); // not patched
@@ -243,7 +257,7 @@ describe("PATCH_BUMP", () => {
             "AMPLIFY",
         ]);
         expect(result.state.pending.sourceIndex).toBe(SCRUB);
-        expect(result.state.programs[SCRUB].combatUses).toBe(0);
+        expect(result.state.programs[SCRUB].patchChance).toBe(1.5);
     });
 });
 
@@ -260,30 +274,30 @@ describe("AMPLIFY", () => {
         ["Kill Switch", KILL_SWITCH, 22, 33],
         ["Scrub", SCRUB, 0, 0],
     ])("amplifying %s takes %i damage to %i", (_name, index, base, amped) => {
-        expect(initialCombatState.programs[index].damage).toBe(base);
+        expect(calm.programs[index].damage).toBe(base);
 
-        const pending = play(initialCombatState, SCRUB);
+        const pending = play(calm, SCRUB);
         const result = select(pending.state, index);
 
         expect(result.state.programs[index].damage).toBe(amped);
     });
 
     test("amplify stashes the original damage in endTurnQueue", () => {
-        const pending = play(initialCombatState, SCRUB);
+        const pending = play(calm, SCRUB);
         const result = select(pending.state, PING);
 
         expect(result.state.programs[PING].endTurnQueue).toEqual({ damage: 4 });
     });
 
     test("amplify only touches the targeted program's damage", () => {
-        const pending = play(initialCombatState, SCRUB);
+        const pending = play(calm, SCRUB);
         const result = select(pending.state, PING);
 
         expect(damages(result.state)).toEqual([12, 6, 0, 9, 6, 22]);
     });
 
     test("ending the turn restores the original damage and clears the queue", () => {
-        const pending = play(initialCombatState, SCRUB);
+        const pending = play(calm, SCRUB);
         const amplified = select(pending.state, PING);
         expect(amplified.state.programs[PING].damage).toBe(6);
 
@@ -295,7 +309,7 @@ describe("AMPLIFY", () => {
     });
 
     test("ending a turn with nothing amplified leaves damage untouched", () => {
-        const next = endTurn(initialCombatState);
+        const next = endTurn(calm);
 
         expect(damages(next.state)).toEqual([12, 4, 0, 9, 6, 22]);
         expect(
@@ -306,7 +320,7 @@ describe("AMPLIFY", () => {
     });
 
     test("amplify can target the source program itself", () => {
-        const start = withProgram(initialCombatState, BUFFER_OVERFLOW, {
+        const start = withProgram(calm, BUFFER_OVERFLOW, {
             attributes: ["AMPLIFY"] as const,
         });
 
@@ -326,8 +340,8 @@ describe("AMPLIFY", () => {
 
     test("amplify is offered regardless of board state", () => {
         const drained: CombatState = {
-            ...initialCombatState,
-            enemy: { ...initialCombatState.enemy, hp: 1, trace: 55, armor: 30 },
+            ...calm,
+            enemy: { ...calm.enemy, hp: 1, trace: 55, armor: 30 },
         };
 
         const result = play(drained, SCRUB);

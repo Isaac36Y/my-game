@@ -24,8 +24,9 @@ export interface Program {
     readonly cyclePoints: number;
     readonly trace: number;
     readonly block: number;
-    readonly combatUses: number;
+    readonly patchChance: number;
     readonly patched: boolean;
+    readonly permaPatched: boolean;
     readonly endTurnQueue: object;
     readonly attributes: Attributes;
 }
@@ -46,9 +47,11 @@ export interface CombatState {
     readonly programs: readonly Program[];
     readonly pending: PendingSelection | null;
     readonly winner: Winner;
+    readonly seed: number;
 }
 
 export const initialCombatState: CombatState = {
+    seed: Math.floor(Math.random() * 100) + 1,
     player: {
         hp: 55,
         maxHp: 80,
@@ -78,8 +81,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 2,
             trace: 10,
             block: 0,
-            combatUses: 0,
+            patchChance: 1.1,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
 
@@ -93,8 +97,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 1,
             trace: 2,
             block: 4,
-            combatUses: 0,
+            patchChance: 0.5,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
 
@@ -108,8 +113,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 1,
             trace: -18,
             block: 0,
-            combatUses: 0,
+            patchChance: 1.5,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
                 "PATCH_BUMP", "AMPLIFY"
@@ -123,8 +129,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 2,
             trace: 8,
             block: 4,
-            combatUses: 0,
+            patchChance: 0.8,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
 
@@ -138,8 +145,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 1,
             trace: 5,
             block: 0,
-            combatUses: 0,
+            patchChance: 0.4,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
 
@@ -153,8 +161,9 @@ export const initialCombatState: CombatState = {
             cyclePoints: 3,
             trace: 15,
             block: 0,
-            combatUses: 0,
+            patchChance: 2,
             patched: false,
+            permaPatched: false,
             endTurnQueue: {},
             attributes: [
 

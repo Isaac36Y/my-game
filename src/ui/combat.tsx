@@ -2,7 +2,7 @@ import { initialCombatState, type Program } from "../sim/state";
 import { resolve, type ResolveResult, type Action } from "../sim/engine";
 import styles from "./combat.module.scss"
 import { Zap, Cpu, AudioLines, Shield, ShieldCog, Waypoints } from "lucide-react";
-import { useReducer } from "react";
+import { useReducer, useRef } from "react";
 import { ATTRIBUTES } from "../sim/attributes";
 
 
@@ -46,10 +46,13 @@ function AttributeRender(program: Program, type: string) {
 
 
 export function Combat() {
-    const [combat, dispatch] = useReducer(adapter, { state: initialCombatState, events: []})
-    const { state } = combat
+    const [combat, dispatch] = useReducer(adapter, { state: initialCombatState, frames: []})
+    const damageDealt = useRef<HTMLParagraphElement>(null)
+    const { state, frames } = combat
     const endCombat = state.winner !== "NULL"
     let winnerDesc: {head: string, body: string} = { head: '', body: ''}
+
+    console.log(frames)
 
     if (endCombat) {
         winnerDesc = {
@@ -57,6 +60,7 @@ export function Combat() {
             body: ""
         }
     }
+
 
     const typeClass = state.programs.map(program => program.type.toLowerCase())
     const intentIndex = state.enemy.intentIndex
@@ -79,6 +83,7 @@ export function Combat() {
                         <p><span><Waypoints />Intent:</span> {state.enemy.intent[intentIndex].type} {state.enemy.intent[intentIndex].amount}</p>
                     </div>
                     <div className={styles.img}>
+                        <p className={styles.damageDealt} ref={damageDealt}></p>
                         <img src="../public/images/sentry-class-enforcer.jpeg" alt="" height={500}/>
                     </div>
                     <div className={styles.health}>

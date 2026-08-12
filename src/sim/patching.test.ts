@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resolve } from "./engine";
+import { resolve, type ResolveResult } from "./engine";
 import { getsPatched, mulberry32 } from "./rng";
 import { initialCombatState, type CombatState, type Program } from "./state";
 
@@ -35,6 +35,9 @@ const play = (state: CombatState, programIndex: number) =>
 
 const select = (state: CombatState, programIndex: number) =>
     resolve(state, { type: "SELECT_PENDING", programIndex });
+
+/** The timeline carries {event, state} frames; most assertions only want the events. */
+const eventsOf = (result: ResolveResult) => result.frames.map((f) => f.event);
 
 const types = (events: { type: string }[]) => events.map((e) => e.type);
 
@@ -133,7 +136,7 @@ describe("patch roll on play", () => {
         const second = play(start, BUFFER_OVERFLOW);
 
         expect(second.state).toEqual(first.state);
-        expect(second.events).toEqual(first.events);
+        expect(eventsOf(second)).toEqual(eventsOf(first));
     });
 
     test("a losing roll patches the program and emits PATCHED_PROGRAM", () => {
@@ -142,7 +145,7 @@ describe("patch roll on play", () => {
         const result = play(start, PING);
 
         expect(result.state.programs[PING].patched).toBe(true);
-        expect(types(result.events)).toContain("PATCHED_PROGRAM");
+        expect(types(eventsOf(result))).toContain("PATCHED_PROGRAM");
     });
 
     test("a surviving roll leaves the program clean and silent", () => {
@@ -151,7 +154,7 @@ describe("patch roll on play", () => {
         const result = play(start, PING);
 
         expect(result.state.programs[PING].patched).toBe(false);
-        expect(types(result.events)).not.toContain("PATCHED_PROGRAM");
+        expect(types(eventsOf(result))).not.toContain("PATCHED_PROGRAM");
     });
 
     test("the roll uses the patchChance the program had before this play", () => {
@@ -259,7 +262,7 @@ describe("a patched program", () => {
 
         expect(result.state).toEqual(start);
         expect(result.state.seed).toBe(LOW_ROLL);
-        expect(result.events).toEqual([]);
+        expect(eventsOf(result)).toEqual([]);
     });
 
     test("an unaffordable program does not burn a roll either", () => {
@@ -283,7 +286,7 @@ describe("a patched program", () => {
         const replay = play({ ...amplified.state, cycles: 20 }, PING);
 
         expect(replay.state.programs[PING].patched).toBe(true);
-        expect(types(replay.events)).toContain("PATCHED_PROGRAM");
+        expect(types(eventsOf(replay))).toContain("PATCHED_PROGRAM");
     });
 });
 

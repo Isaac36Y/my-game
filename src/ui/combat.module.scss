@@ -56,9 +56,19 @@
     }
 
     .img {
+        position: relative;
         display: flex;
         justify-content: center;
         height: 55vh;
+
+        .damageDealt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            translate: -50% -50%;
+            font-size: var(--fs-xxl);
+            transition: translate 1s ease;
+        }
 
         img {
             height: 100%

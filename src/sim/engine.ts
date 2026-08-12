@@ -21,125 +21,134 @@ export type GameEvent =
     | { readonly type: "CYCLE_SPENT"; readonly amount: number }
     | { readonly type: "CYCLE_INCREASE"; readonly amount: number }
     | { readonly type: "TAKE_DAMAGE"; readonly amount: number }
+    | { readonly type: "PROGRAM_CHANCE_INCREASE" }
     | { readonly type: "BUMP_TURN" }
     | { readonly type: "PATCHED_PROGRAM" }
     | { readonly type: "PLAYER_DIED" }
     | { readonly type: "TRACE_MAX" }
     | { readonly type: "ENEMY_DIED" };
 
-export type ResolveResult = { state: CombatState; events: GameEvent[] }
+export type Frames = { event: GameEvent, state: CombatState }
+export type ResolveResult = { state: CombatState; frames: Frames[] }
 
 function playProgram(state: CombatState, programIndex: number): ResolveResult {
     const mulberry = mulberry32(state.seed)
-    const events: GameEvent[] = [];
+    const timeline: Frames[] = [];
     const program = state.programs[programIndex];
     let winner: Winner = state.winner
-    let programPatched = false
+    const gettingPatched = getsPatched(mulberry.float, program.patchChance)
+    const permaPatching = program.permaPatched === 'QUEUED' || program.permaPatched === "PATCHED"
+
+    let current: CombatState = {...state, seed: mulberry.nextSeed}
+
+    timeline.push({event: { type: "PROGRAM_USED", name: program.name }, state: current});
+
     let dmg = program.damage
     let armor = state.enemy.armor
-    const gettingPatched = getsPatched(mulberry.float, program.patchChance)
-    console.log(program.permaPatched)
 
-    const permaPatching = program.permaPatched === 'QUEUED' || program.permaPatched === "PATCHED"
-    console.log(permaPatching)
     if (armor > 0) {
         if (dmg >= armor) {
             dmg = dmg - armor
-            events.push({ type: "ARMOR_BROKE", amount: armor });
+            current = {...current, enemy: {...current.enemy, armor: 0}}
+            timeline.push({event: {type: "ARMOR_BROKE", amount: armor}, state: current }); 
             armor = 0
         }else if (dmg < armor) {
             armor = armor - dmg
-            events.push({ type: "ARMOR_HIT", amount: dmg})
+            current = {...current, enemy: {...current.enemy, armor: armor}}
+            timeline.push({ event: {type: "ARMOR_HIT", amount: dmg}, state: current })
             dmg = 0
         }
     }
     const oldTrace = state.enemy.trace
     const newTrace = Math.max(0, oldTrace + program.trace)
-
-    events.push({ type: "PROGRAM_USED", name: program.name });
-    if (dmg > 0) events.push({ type: "DAMAGE_DEALT", amount: dmg });
-    if (program.trace !== 0) events.push({ type: "TRACE_GAINED", amount: newTrace - oldTrace});
-    if (program.cyclePoints !== 0) events.push({ type: "CYCLE_SPENT", amount: program.cyclePoints});
-    if (program.block > 0) events.push({ type: "BLOCK_GAINED", amount: program.block })
+    
+    if (dmg > 0) {
+        current = {...current, enemy: {...current.enemy, hp: Math.max(0, current.enemy.hp - dmg)}}
+        timeline.push({event: { type: "DAMAGE_DEALT", amount: dmg }, state: current});
+    } 
+    if (program.trace !== 0) {
+        current = {...current, enemy: {...current.enemy, trace: newTrace}}
+        timeline.push({event: { type: "TRACE_GAINED", amount: newTrace - oldTrace }, state: current});
+    }
+    if (program.cyclePoints !== 0) {
+        current = {...current, cycles: current.cycles - program.cyclePoints}
+        timeline.push({event: { type: "CYCLE_SPENT", amount: program.cyclePoints }, state: current});
+    }
+    if (program.block > 0) {
+        current = {...current, player: {...current.player, block: current.player.block + program.block}}
+        timeline.push({event: { type: "BLOCK_GAINED", amount: program.block }, state: current});
+    }
     if (state.enemy.hp - dmg <= 0) {
-        events.push({ type: "ENEMY_DIED" })
         winner = "PLAYER"
+        current = {...current, winner: winner}
+        timeline.push({event: { type: "ENEMY_DIED" }, state: current});
     }
     if (newTrace >= state.enemy.maxTrace) {
-        events.push({ type: "TRACE_MAX" })
         winner = "ENEMY"
+        current = {...current, winner: winner}
+        timeline.push({event: { type: "TRACE_MAX" }, state: current});
     }
     // TODO: only happens if no winner from this turn
     if (gettingPatched) {
-        events.push({ type: "PATCHED_PROGRAM" })
-        programPatched = true
+        current = {...current, programs: current.programs.map((program, index) =>
+            index === programIndex
+            ? {...program, patched: permaPatching ? false : true }
+            : program
+        )}
+        timeline.push({event: { type: "PATCHED_PROGRAM" }, state: current});
     }
-    
-    const nextState: CombatState = {
-        ...state,
-        seed: mulberry.nextSeed,
-        cycles: state.cycles - program.cyclePoints,
-        player: {
-            ...state.player,
-            block: state.player.block + program.block
-        },
-        enemy: {
-            ...state.enemy,
-            hp: Math.max(0, state.enemy.hp - dmg),
-            trace: newTrace,
-            armor
-        },
-        programs: state.programs.map((program, index) => 
-            index === programIndex 
-            ? {...program, patchChance: Math.min(5, program.patchChance + 1), patched: permaPatching ? false : gettingPatched, permaPatched: permaPatching ? "PATCHED" : null } 
-            : program 
-        ),
-        winner
-    };
-console.log(nextState.programs)
-    return { state: nextState, events };
+
+    current = {...current, programs: current.programs.map((program, index) =>
+        index === programIndex
+        ? {...program, patchChance: Math.min(5, program.patchChance + 1)}
+        : program
+    )}
+    timeline.push({event: { type: "PROGRAM_CHANCE_INCREASE" }, state: current});
+
+    return { state: current, frames: timeline };
 }
 
 export function resolve(
     state: CombatState,
     action: Action,
 ): ResolveResult {
-    
-    const events: GameEvent[] = [];
 
     switch (action.type) {
         case "PLAY_PROGRAM": {
             if (state.pending) return
+
+            let current: CombatState = state
             
             const program = state.programs[action.programIndex];
-            if (program.cyclePoints > state.cycles) return { state, events };
-            if (program.patched === true || program.permaPatched === "PATCHED") return { state, events }
+            if (program.cyclePoints > state.cycles) return { state, frames: [] };
+            if (program.patched === true || program.permaPatched === "PATCHED") return { state, frames: [] }
 
             let needsTarget = program.attributes.filter((att: AttributeId) => ATTRIBUTES[att].needsProgram && ATTRIBUTES[att].conditional(state))
 
             if (needsTarget.length > 0) {
-                const nextState: CombatState = {
-                    ...state,
+                current = {
+                    ...current,
                     pending: {attributeQueue: needsTarget, sourceIndex: action.programIndex}
                 }
 
-                return {state: nextState, events}
+                return {state: current, frames: []}
             }
 
 
             return playProgram(state, action.programIndex)
         }
         case "SELECT_PENDING": {
-            let nextState = ATTRIBUTES[state.pending.attributeQueue[0]].effect(state, action.programIndex)
+            let current = ATTRIBUTES[state.pending.attributeQueue[0]].effect(state, action.programIndex)
 
-            if (nextState.pending.attributeQueue.length === 0) {
-                nextState = {...nextState, pending: null}
-                return playProgram(nextState, state.pending.sourceIndex)
+            if (current.pending.attributeQueue.length === 0) {
+                current = {...current, pending: null}
+                return playProgram(current, state.pending.sourceIndex)
             }else {
-                return { state: nextState, events}
+                return { state: current, frames: []}
             }
         }
         case "TURN_END": {
+            const timeline: Frames[] = [];
             const cyclesToThree = 3 - state.cycles
             let playerHp = state.player.hp;
             let block = state.player.block
@@ -148,61 +157,56 @@ export function resolve(
             const intentIndex = state.enemy.intentIndex
             const intent = state.enemy.intent[intentIndex]
 
+            let current: CombatState = state
+
+            current = {...current, programs: current.programs.map(program => {
+                return {...program, ...program.endTurnQueue, endTurnQueue: {}}
+            })}
+
             switch (intent.type) {
                 case "ATTACK": {
                     let dmg = intent.amount;
-                
+
                     if (block > 0) {
                         if (dmg >= block) {
                             dmg = dmg - block
-                            events.push({ type: "BLOCK_BROKE", amount: block });
+                            current = {...current, player: {...current.player, block: 0}}
+                            timeline.push({event: { type: "BLOCK_BROKE", amount: block }, state: current});
                             block = 0
                         }else if (dmg < block) {
                             block = block - dmg
-                            events.push({ type: "BLOCK_HIT", amount: dmg})
+                            current = {...current, player: {...current.player, block: block}}
+                            timeline.push({event: { type: "BLOCK_HIT", amount: dmg }, state: current});
                             dmg = 0
                         }
                     }
                     playerHp = Math.max(0, playerHp - dmg);
-                    events.push({ type: "TAKE_DAMAGE", amount: dmg });
-                    events.push({ type: "PLAYER_DIED" })
+                    current = {...current, player: {...current.player, hp: playerHp}}
+                    timeline.push({event: { type: "TAKE_DAMAGE", amount: dmg }, state: current});
+                    timeline.push({event: { type: "PLAYER_DIED" }, state: current});
                     break
                 }
                 case "ARMOR": {
                     enemyArmor = intent.amount
-                    events.push({ type: "ARMOR_GAINED", amount: enemyArmor });
+                    current = {...current, enemy: {...current.enemy, armor: enemyArmor}}
+                    timeline.push({event: { type: "ARMOR_GAINED", amount: enemyArmor }, state: current});
                 }
             }
             if (playerHp <= 0) {
-                events.push({ type: "PLAYER_DIED" })
                 winner = "ENEMY"
+                current = {...current, winner: winner}
+                timeline.push({event: { type: "PLAYER_DIED" }, state: current});
             }
-            events.push({ type: "BUMP_TURN" })
-            events.push({ type: "CYCLE_INCREASE", amount: cyclesToThree })
+            current = {...current, turn: current.turn + 1, enemy: {...current.enemy, intentIndex: (intentIndex + 1) % state.enemy.intent.length}}
+            timeline.push({event: { type: "BUMP_TURN" }, state: current});
 
+            current = {...current, cycles: 3}
+            timeline.push({event: { type: "CYCLE_INCREASE", amount: cyclesToThree }, state: current});
 
-            const nextState: CombatState = {
-                ...state,
-                player: {
-                    ...state.player,
-                    hp: playerHp,
-                    block
-                },
-                enemy: {
-                    ...state.enemy,
-                    intentIndex: (intentIndex + 1) % state.enemy.intent.length,
-                    armor: enemyArmor
-                },
-                programs: state.programs.map(program => {return {...program, ...program.endTurnQueue, endTurnQueue: {} }}),
-                cycles: 3,
-                turn: state.turn + 1,
-                winner
-            }
-
-            return { state: nextState, events}
+            return { state: current, frames: timeline}
         }
         case "RESET_GAME": {
-            return { state: initialCombatState, events }
+            return { state: initialCombatState, frames: [] }
         }
     }
 }

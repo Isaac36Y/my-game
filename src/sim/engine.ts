@@ -28,12 +28,16 @@ export type GameEvent =
     | { readonly type: "TRACE_MAX" }
     | { readonly type: "ENEMY_DIED" };
 
-export type Frames = { event: GameEvent, state: CombatState }
-export type ResolveResult = { state: CombatState; frames: Frames[] }
+export const timelinesDelay = {
+
+}
+
+export type Frame = { event: GameEvent, state: CombatState }
+export type ResolveResult = { state: CombatState; frames: Frame[] }
 
 function playProgram(state: CombatState, programIndex: number): ResolveResult {
     const mulberry = mulberry32(state.seed)
-    const timeline: Frames[] = [];
+    const timeline: Frame[] = [];
     const program = state.programs[programIndex];
     let winner: Winner = state.winner
     const gettingPatched = getsPatched(mulberry.float, program.patchChance)
@@ -138,6 +142,7 @@ export function resolve(
             return playProgram(state, action.programIndex)
         }
         case "SELECT_PENDING": {
+            // effects update state, remove that attributes from the queue, then return the new state
             let current = ATTRIBUTES[state.pending.attributeQueue[0]].effect(state, action.programIndex)
 
             if (current.pending.attributeQueue.length === 0) {
@@ -148,7 +153,7 @@ export function resolve(
             }
         }
         case "TURN_END": {
-            const timeline: Frames[] = [];
+            const timeline: Frame[] = [];
             const cyclesToThree = 3 - state.cycles
             let playerHp = state.player.hp;
             let block = state.player.block

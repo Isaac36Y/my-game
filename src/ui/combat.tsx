@@ -1,4 +1,4 @@
-import { initialCombatState, type CombatState, type Program } from "../sim/state";
+import { initialCombatState, type Program } from "../sim/state";
 import { resolve, type Action, type Frame } from "../sim/engine";
 import styles from "./combat.module.scss"
 import { Zap, Cpu, AudioLines, Shield, ShieldCog, Waypoints } from "lucide-react";
@@ -44,46 +44,55 @@ function AttributeRender(program: Program, type: string) {
 
 
 export function Combat() {
+    // sim is immediate return of the new state and each frame returned
     const [sim, setSim] = useState(initialCombatState)
+    // view is what shows in UI. Runs through sims frames
     const [view, setView] = useState(initialCombatState)
+    // fx is what the UI reads to know what to animate
+    const [fx, setFx] = useState([])
     const queue = useRef<Frame[]>([])
-    const timer = useRef<number | null>(null)
+    const [queueFill, setQueueFill] = useState(false)
 
+
+    const isPlaying = view !== sim
+    
     function step() {
         const frame = queue.current.shift()
-        if (!frame) { timer.current = null; return }
+        console.log(frame.event)
+        if (!frame) { setQueueFill(false); return }
         setView(frame.state)
-        console.log(frame.event.type)               
-        timer.current = setTimeout(step, 500)
+        setFx([...fx, frame.event])
     }
 
     const send = (action: Action) => {
+        if (isPlaying) return
+        queue.current = []
+        setFx([])
         const result = resolve(sim, action)
         setSim(result.state)
         if (result.frames.length === 0) {
             setView(result.state)
         }else {
-           queue.current = result.frames 
-           step()
+        queue.current = result.frames 
+        setQueueFill(true)
+        step()
         }
-        
-    } 
-    
-    const state: CombatState = sim
-    const endCombat = state.winner !== "NULL"
+    }
+
+    const endCombat = view.winner !== "NULL"
     let winnerDesc: {head: string, body: string} = { head: '', body: ''}
 
     if (endCombat) {
         winnerDesc = {
-            head: state.winner === "PLAYER" ? "You Win!" : "You Lose...",
+            head: view.winner === "PLAYER" ? "You Win!" : "You Lose...",
             body: ""
         }
     }
 
+    const typeClass = view.programs.map(program => program.type.toLowerCase())
+    const intentIndex = view.enemy.intentIndex
 
-    const typeClass = state.programs.map(program => program.type.toLowerCase())
-    const intentIndex = state.enemy.intentIndex
-
+    if (queueFill) setTimeout(() => {step()}, 500)
     return (
         <>
             <div className={styles.backdrop} style={endCombat ? {display: "flex"} : {display: 'none'}}></div>
@@ -105,7 +114,8 @@ export function Combat() {
                         <img src="../public/images/sentry-class-enforcer.jpeg" alt="" height={500}/>
                     </div>
                     <div className={styles.health}>
-                        <p className={styles.text}><span><Cpu />HP:</span> {view.enemy.hp} / {view.enemy.maxHp}</p>
+                        {fx.at(-1)?.type === "DAMAGE_DEALT" && <p className={styles.damageDealt}>-{fx.at(-1).amount}</p>}
+                        <p className={`${styles.text}`}><span><Cpu />HP:</span> {view.enemy.hp} / {view.enemy.maxHp}</p>
                         <div className={styles.bars}>
                             <progress className={styles.bar} max={ view.enemy.maxHp } value={ view.enemy.hp }></progress>
                             <div className={styles.blockBar} style={view.enemy.armor > 0 ? {opacity: 1} : {opacity: 0}}><ShieldCog height={24}/>{view.enemy.armor}</div>
@@ -123,8 +133,9 @@ export function Combat() {
                     </div>
                     <div className={styles.programs}>
                         {view.programs.map((program, key) => (
-                            <div 
+                            <button 
                             key={key} 
+                            disabled={isPlaying}
                             className={`${styles.programBtn} ${styles[typeClass[key]]} ${ATTRIBUTES[view.pending?.attributeQueue[0]] && styles[toCamel(view.pending.attributeQueue[0])]} ${program.patched && styles.patched} ${program.permaPatched === "PATCHED" && styles.permaPatched}`}
                             onClick={view.pending 
                                 ? () => send({ type: "SELECT_PENDING", programIndex: key}) 
@@ -157,7 +168,7 @@ export function Combat() {
                                     {AttributeRender(program, program.type)}
                                     <p className={styles.patchChance}>pc: {(program.patchChance * 2) * 10}%</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                     <div className={styles.lower}>

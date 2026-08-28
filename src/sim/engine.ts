@@ -28,9 +28,6 @@ export type GameEvent =
     | { readonly type: "TRACE_MAX" }
     | { readonly type: "ENEMY_DIED" };
 
-export const timelinesDelay = {
-
-}
 
 export type Frame = { event: GameEvent, state: CombatState }
 export type ResolveResult = { state: CombatState; frames: Frame[] }

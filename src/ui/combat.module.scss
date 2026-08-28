@@ -4,21 +4,26 @@
     font-size: var(--fs-xxl);
     font-family: var(--ff-title);
     text-align: center;
+    flex: 0 0 auto;
+    padding-block: u(0.25);
 }
 
 .combatUI {
     display: flex;
-    height: calc(100vh - 110px);
+    flex: 1 1 auto;
+    min-height: 0;
     padding-inline: 2vw;
+    padding-bottom: u(0.5);
 }
 
 .enemy {
     height: 100%;
+    min-height: 0;
     width: 45vw;
     font-family: var(--ff-body);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: u(1);
     border: 2px solid rgb(96, 0, 0);
     border-radius: 1rem 0 0 1rem;
     background-color: rgb(11, 7, 6);
@@ -29,7 +34,7 @@
         font-family: var(--ff-title);
         font-size: var(--fs-xl);
         color: var(--color-enemy);
-        padding: 1rem 1.5rem;
+        padding: u(1) u(1.5);
         border-bottom: 1px solid gray;
         
     }
@@ -38,18 +43,18 @@
         font-size: var(--fs-med);
         display: flex;
         align-items: flex-start;
-        padding: 0.5rem 1.5rem;
-        gap: 4rem;
+        padding: u(0.5) u(1.5);
+        gap: u(4);
 
         p {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: u(1);
             
             > span {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
+                gap: u(0.5);
                 color: var(--color-enemy);
             }
         }
@@ -59,10 +64,15 @@
         position: relative;
         display: flex;
         justify-content: center;
-        height: 55vh;
+        /* Soaks up the slack in the column so the portrait is the thing that
+           gives way first when the window gets short. */
+        flex: 1 1 auto;
+        min-height: 0;
 
         img {
-            height: 100%
+            height: 100%;
+            width: 100%;
+            object-fit: contain;
         }
     }
     
@@ -71,13 +81,13 @@
         display: flex;
         flex-direction: column;
         margin-top: auto;
-        gap: 1rem;
-        padding: 0.5rem 1.5rem;
+        gap: u(1);
+        padding: u(0.5) u(1.5);
 
         .damageDealt {
             position: absolute;
-            top: -3rem;
-            left: 5rem;
+            top: u(-3);
+            left: u(5);
             font-size: var(--fs-xxl);
             animation: float 0.5s linear;
             opacity: 0;
@@ -104,12 +114,12 @@
         .text {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: u(1);
 
             >span {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem
+                gap: u(0.5)
             }
         }
 
@@ -118,7 +128,7 @@
 
             .bar {
                 
-                top: 0.3rem;
+                top: u(0.3);
                 left: 0;
                 @include bar;
                 width: 100%;
@@ -134,11 +144,11 @@
             .blockBar {
                 position: absolute;
                 top: 0;
-                left: -0.2rem;
-                height: 1.3rem;
+                left: u(-0.2);
+                height: u(1.3);
                 border-radius: 5rem;
-                width: calc(100% + 0.4rem);
-                font-size: 1.5rem;
+                width: calc(100% + #{u(0.4)});
+                font-size: u(1.5);
                 border: 2px solid var(--color-block);
                 background-color: rgba(91, 106, 181, 0.4);
                 display: flex;
@@ -155,30 +165,31 @@
     border: 2px solid rgb(96, 0, 0);
     border-radius: 0 1rem 1rem 0;
     width: 55vw;
-    overflow: hidden;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: u(1);
     background-color: rgb(11, 7, 6);
-    overflow: scroll;
+    overflow: hidden;
     position: relative;
 
     .turn {
         position: absolute;
-        right: 0.5rem;
-        top: 0.5rem
+        right: u(0.5);
+        top: u(0.5)
     }
 
     .upperPlayer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.5rem 1.5rem ;
+        padding: u(0.5) u(1.5) ;
         width: 100%;
+        flex: 0 0 auto;
  
         .stats {
             display: flex;
-            gap: 1rem 4rem;
+            gap: u(1) u(4);
             font-size: var(--fs-xl);
             width: 100%;
             flex-wrap: wrap;
@@ -186,12 +197,12 @@
             p {
                 display: flex;
                 align-items: center;
-                gap: 1rem;
+                gap: u(1);
                 
                 > span {
                     display: flex;
                     align-items: center;
-                    gap: 0.5rem;
+                    gap: u(0.5);
                     color: var(--color-player);
                 }
             }
@@ -213,16 +224,24 @@
 
     .programs {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        padding: 0 0.5rem;
+        /* minmax(0, 1fr) not 1fr — a bare 1fr is minmax(auto, 1fr) and refuses
+           to shrink below its content, which is what forced the scrollbar. */
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: minmax(0, 1fr);
+        flex: 1 1 auto;
+        min-height: 0;
+        gap: u(0.75);
+        padding: 0 u(0.5);
 
         .programBtn {
             position: relative;
             color: white;
             width: 100%;
+            min-height: 0;
+            overflow: hidden;
+            justify-content: space-between;
             background-color: rgb(33, 22, 38);
-            padding: 0.25rem 1rem;
+            padding: u(0.25) u(1);
             border-radius: 0.3rem;
             border: 1px solid rgb(110, 123, 84);
             display: flex;
@@ -290,7 +309,7 @@
                     display: flex;
                     flex-direction: column;
                     align-items: flex-end;
-                    gap: 0.25rem;
+                    gap: u(0.25);
                     margin-left: auto;
 
                     .cyclePoints {
@@ -298,7 +317,7 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 0.25rem;
+                        gap: u(0.25);
 
                         > span {
                             font-size: var(--fs-reg);
@@ -310,8 +329,9 @@
             .output {
                 display: flex;
                 width: 100%;
-                padding: 0.5rem 0.5rem;
-                gap: 1rem;
+                padding: u(0.5) u(0.5);
+                gap: u(1);
+                min-height: 0;
                 border-bottom: 1px solid gray;
 
                 .damage, .block, .effect {
@@ -319,16 +339,16 @@
                     font-size: var(--fs-lg);
                     flex-wrap: wrap;
                     row-gap: 0;
-                    height: 3.5rem;
+                    height: u(3.5);
                     border-radius: 0.6rem;
-                    padding: 0.5rem 0.5rem;
+                    padding: u(0.5) u(0.5);
                     line-height: 1;
                     box-shadow: 0 0 8px 0, 0 0 5px 0 inset;
                     display: flex;
                     align-items: center;
     
                     .label {
-                        font-size: 0.65rem;
+                        font-size: u(0.65);
                         flex-basis: 100%;
                         text-transform: uppercase;
                         letter-spacing: 0.1rem;
@@ -359,18 +379,19 @@
 
             .attributes {
                 display: flex;
-                column-gap: 0.5rem;
+                column-gap: u(0.5);
                 width: 100%;
                 justify-content: center;
-                padding: 0.5rem 0;
+                padding: u(0.5) 0;
+                min-height: 0;
 
                 .attribute {
                     position: relative;
 
                     .placeholder, .img {
                         margin-inline: auto;
-                        width: 3rem;
-                        height: 3rem;
+                        width: u(3);
+                        height: u(3);
                         border: 1px solid rgb(118, 118, 157);
                         border-radius: 0.6rem;
                         display: flex;
@@ -393,12 +414,12 @@
                         top: -220%;
                         left: 50%;
                         translate: -50% 0;
-                        width: 15rem;
+                        width: u(15);
                         height: fit-content;
-                        font-size: 0.8rem;
+                        font-size: u(0.8);
                         background-color: tan;
                         text-align: center;
-                        padding: 0.5rem 0.25rem;
+                        padding: u(0.5) u(0.25);
                         border-radius: 0.4rem;
                         display: none;
                         flex-direction: column;
@@ -406,7 +427,7 @@
 
                         .title {
                             font-weight: 700;
-                            font-size: 1rem;
+                            font-size: u(1);
                         }
                     }
 
@@ -419,8 +440,9 @@
 
                 .patchChance {
                     position: absolute;
-                    right: 1rem;
-                    bottom: 1rem;
+                    right: u(1);
+                    bottom: u(0.5);
+                    font-size: var(--fs-xs);
                 }
             }
 
@@ -429,7 +451,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 0.5rem;
+                gap: u(0.5);
             }
 
             .damageIncrease {
@@ -443,7 +465,7 @@
                     top: 50%;
                     left: 50%;
                     translate: -50% -50%;
-                    font-size: 2.5rem;
+                    font-size: var(--fs-xxl);
                     display: flex;
                     justify-content: center;
                     align-items: center;
@@ -481,7 +503,8 @@
         justify-content: space-between;
         align-items: center;
         margin-top: auto;
-        padding: 0 1rem 1rem;
+        flex: 0 0 auto;
+        padding: 0 u(1) u(1);
 
         .health {
             font-size: var(--fs-lg);
@@ -493,7 +516,7 @@
 
                 .bar {
                     position: absolute;
-                    top: 0.3rem;
+                    top: u(0.3);
                     left: 0;
                     @include bar;
                     width: 100%;
@@ -504,12 +527,12 @@
 
                 .blockBar {
                     position: absolute;
-                    top: 0.1rem;
-                    left: -0.2rem;
-                    height: 1.35rem;
+                    top: u(0.1);
+                    left: u(-0.2);
+                    height: u(1.35);
                     border-radius: 5rem;
-                    width: calc(100% + 0.4rem);
-                    font-size: 1.5rem;
+                    width: calc(100% + #{u(0.4)});
+                    font-size: u(1.5);
                     border: 2px solid var(--color-block);
                     background-color: rgba(91, 106, 181, 0.4);
                     display: flex;
@@ -530,8 +553,8 @@
 
         .endTurnBtn {
             background-color: gold;
-            font-size: 1.8rem;
-            padding: 0.5rem 1.5rem;
+            font-size: u(1.8);
+            padding: u(0.5) u(1.5);
             border: 3px solid rgb(226, 194, 14);
             border-radius: 0.6rem
         }
@@ -556,7 +579,7 @@
     left: 50%;
     translate: -50% -50%;
     width: 40vw;
-    height: 30vh;
+    height: 30dvh;
     background-color: rgb(83, 83, 83);
     border: 3px solid rgb(59, 39, 63);
     display: flex;
@@ -566,14 +589,14 @@
     z-index: 10;
 
     h2 {
-        font-size: 2.8rem;
+        font-size: calc(var(--u) * 2.8);
     }
 
     button {
         background-color: gold;
         font-family: var(--ff-body);
-        font-size: 1.6rem;
-        padding: 0.75rem 1.5rem;
+        font-size: var(--fs-lg);
+        padding: u(0.75) u(1.5);
 
     }
 }
@@ -583,7 +606,7 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background-color: rgba(0, 0, 0, 0.397);
     z-index: 9;
 }

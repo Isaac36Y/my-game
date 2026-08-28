@@ -111,7 +111,7 @@ export function Combat() {
                         <p><span><Waypoints />Intent:</span> {view.enemy.intent[intentIndex].type} {view.enemy.intent[intentIndex].amount}</p>
                     </div>
                     <div className={styles.img}>
-                        <img src="../public/images/sentry-class-enforcer.jpeg" alt="" height={500}/>
+                        <img src="../public/images/sentry-class-enforcer.jpeg" alt="" />
                     </div>
                     <div className={styles.health}>
                         {fx.at(-1)?.type === "DAMAGE_DEALT" && <p className={styles.damageDealt}>-{fx.at(-1).amount}</p>}

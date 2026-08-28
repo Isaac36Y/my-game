@@ -17,7 +17,7 @@ body {
   -webkit-font-smoothing: antialiased; 
   background-color: rgb(33, 22, 38);
   color: white;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -58,5 +58,10 @@ a {
 }
 
 main {
-    height: 100vh;
+    height: 100dvh;
+    /* Column flex so the header takes what it needs and the combat UI absorbs
+       the rest. min-height: 0 lets that remainder actually shrink. */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }

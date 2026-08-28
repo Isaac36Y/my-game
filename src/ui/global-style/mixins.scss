@@ -1,10 +1,15 @@
 
+// Multiples of the global height-driven unit. u(1.5) == the old 1.5rem.
+@function u($n) {
+    @return calc(var(--u) * #{$n});
+}
+
 @mixin bar {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
     border: none;
-    height: 15px;
+    height: u(0.95);
     border-radius: 10px;
     background-color: #e0e0e0;
 

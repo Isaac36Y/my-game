@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { resolve } from "./engine";
+import { resolve, type ResolveResult } from "./engine";
 import { mulberry32 } from "./rng";
 import { initialCombatState, type CombatState, type Program } from "./state";
 
@@ -33,6 +33,9 @@ const select = (state: CombatState, programIndex: number) =>
     resolve(state, { type: "SELECT_PENDING", programIndex });
 
 const endTurn = (state: CombatState) => resolve(state, { type: "TURN_END" });
+
+/** The timeline carries {event, state} frames; most assertions only want the events. */
+const eventsOf = (result: ResolveResult) => result.frames.map((f) => f.event);
 
 const damages = (state: CombatState) => state.programs.map((p) => p.damage);
 
@@ -85,7 +88,7 @@ describe("pending handshake", () => {
     test("opening a selection emits no events", () => {
         const result = play(calm, SCRUB);
 
-        expect(result.events).toEqual([]);
+        expect(eventsOf(result)).toEqual([]);
     });
 
     test("the queue only holds attributes whose conditional passes", () => {

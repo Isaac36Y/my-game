@@ -1,12 +1,10 @@
 import { initialCombatState, type Program } from "../sim/state";
-import { resolve, type ResolveResult, type Action } from "../sim/engine";
+import { resolve, type Action, type Frame } from "../sim/engine";
 import styles from "./combat.module.scss"
 import { Zap, Cpu, AudioLines, Shield, ShieldCog, Waypoints } from "lucide-react";
-import { useReducer } from "react";
+import { useRef, useState } from "react";
 import { ATTRIBUTES } from "../sim/attributes";
 
-
-const adapter = (wrapper: ResolveResult, action: Action) => resolve(wrapper.state, action)
 const toCamel = (str: string) => 
     str
     .toLowerCase()
@@ -46,66 +44,102 @@ function AttributeRender(program: Program, type: string) {
 
 
 export function Combat() {
-    const [combat, dispatch] = useReducer(adapter, { state: initialCombatState, events: []})
-    const { state } = combat
-    const endCombat = state.winner !== "NULL"
+    // sim is immediate return of the new state and each frame returned
+    const [sim, setSim] = useState(initialCombatState)
+    // view is what shows in UI. Runs through sims frames
+    const [view, setView] = useState(initialCombatState)
+    // fx is what the UI reads to know what to animate
+    const [fx, setFx] = useState([])
+    const queue = useRef<Frame[]>([])
+    const [queueFill, setQueueFill] = useState(false)
+
+
+    const isPlaying = view !== sim
+    
+    function step() {
+        const frame = queue.current.shift()
+        console.log(frame.event)
+        if (!frame) { setQueueFill(false); return }
+        setView(frame.state)
+        setFx([...fx, frame.event])
+    }
+
+    const send = (action: Action) => {
+        if (isPlaying) return
+        queue.current = []
+        setFx([])
+        const result = resolve(sim, action)
+        setSim(result.state)
+        if (result.frames.length === 0) {
+            setView(result.state)
+        }else {
+        queue.current = result.frames 
+        setQueueFill(true)
+        step()
+        }
+    }
+
+    const endCombat = view.winner !== "NULL"
     let winnerDesc: {head: string, body: string} = { head: '', body: ''}
 
     if (endCombat) {
         winnerDesc = {
-            head: state.winner === "PLAYER" ? "You Win!" : "You Lose...",
+            head: view.winner === "PLAYER" ? "You Win!" : "You Lose...",
             body: ""
         }
     }
 
-    const typeClass = state.programs.map(program => program.type.toLowerCase())
-    const intentIndex = state.enemy.intentIndex
+    const typeClass = view.programs.map(program => program.type.toLowerCase())
+    const intentIndex = view.enemy.intentIndex
 
+    if (queueFill) setTimeout(() => {step()}, 500)
     return (
         <>
             <div className={styles.backdrop} style={endCombat ? {display: "flex"} : {display: 'none'}}></div>
             <div className={styles.endGameModule} style={endCombat ? {display: "flex"} : {display: 'none'}}>
                 <h2>{winnerDesc.head}</h2>
                 <p>{winnerDesc.body}</p>
-                <button type="button" onClick={() => dispatch({ type: "RESET_GAME" })}>Start Over</button>
+                <button type="button" onClick={() => send({ type: "RESET_GAME" })}>Start Over</button>
             </div>
             <div className={`${styles.header} title`}>
                 <h1>Access Intrusion</h1>
             </div >
             <div className={`${styles.combatUI}`}>
                 <div className={`${styles.enemy}`}>
-                    <p className={`${styles.name}`} style={state.enemy.intent[intentIndex].type === "ATTACK" ? {boxShadow: '0 0 80px 20px red'} : {boxShadow: '0 0 80px 20px var(--color-block)'}}>Sentry-Class Enforcer</p>
+                    <p className={`${styles.name}`} style={view.enemy.intent[intentIndex].type === "ATTACK" ? {boxShadow: '0 0 80px 20px red'} : {boxShadow: '0 0 80px 20px var(--color-block)'}}>Sentry-Class Enforcer</p>
                     <div className={styles.stats}>
-                        <p><span><Waypoints />Intent:</span> {state.enemy.intent[intentIndex].type} {state.enemy.intent[intentIndex].amount}</p>
+                        <p><span><Waypoints />Intent:</span> {view.enemy.intent[intentIndex].type} {view.enemy.intent[intentIndex].amount}</p>
                     </div>
                     <div className={styles.img}>
-                        <img src="../public/images/sentry-class-enforcer.jpeg" alt="" height={500}/>
+                        <img src="../public/images/sentry-class-enforcer.jpeg" alt="" />
                     </div>
                     <div className={styles.health}>
-                        <p className={styles.text}><span><Cpu />HP:</span> {state.enemy.hp} / {state.enemy.maxHp}</p>
+                        {fx.at(-1)?.type === "DAMAGE_DEALT" && <p className={styles.damageDealt}>-{fx.at(-1).amount}</p>}
+                        <p className={`${styles.text}`}><span><Cpu />HP:</span> {view.enemy.hp} / {view.enemy.maxHp}</p>
                         <div className={styles.bars}>
-                            <progress className={styles.bar} max={ state.enemy.maxHp } value={ state.enemy.hp }></progress>
-                            <div className={styles.blockBar} style={state.enemy.armor > 0 ? {opacity: 1} : {opacity: 0}}><ShieldCog height={24}/>{state.enemy.armor}</div>
+                            <progress className={styles.bar} max={ view.enemy.maxHp } value={ view.enemy.hp }></progress>
+                            <div className={styles.blockBar} style={view.enemy.armor > 0 ? {opacity: 1} : {opacity: 0}}><ShieldCog height={24}/>{view.enemy.armor}</div>
                         </div>
                     </div>
                 </div>
                 <div className={`${styles.player}`}>
-                    <p className={styles.turn}><span>Turn:</span> {state.turn} </p>
+                    <p className={styles.turn}><span>Turn:</span> {view.turn} </p>
                     <div className={styles.upperPlayer}>
                         <div className={styles.stats}>
-                            <p><span><AudioLines />Trace:</span> {state.enemy.trace} / {state.enemy.maxTrace}</p>
-                            <p><span><Zap />Cycles:</span> {state.cycles}</p>
-                            <progress className={styles.bar} max={ state.enemy.maxTrace } value={ state.enemy.trace }></progress>
+                            <p><span><AudioLines />Trace:</span> {view.enemy.trace} / {view.enemy.maxTrace}</p>
+                            <p><span><Zap />Cycles:</span> {view.cycles}</p>
+                            <progress className={styles.bar} max={ view.enemy.maxTrace } value={ view.enemy.trace }></progress>
                         </div>
                     </div>
                     <div className={styles.programs}>
-                        {state.programs.map((program, key) => (
-                            <div 
+                        {view.programs.map((program, key) => (
+                            <button 
                             key={key} 
-                            className={`${styles.programBtn} ${styles[typeClass[key]]} ${ATTRIBUTES[state.pending?.attributeQueue[0]] && styles[toCamel(state.pending.attributeQueue[0])]} ${program.patched && styles.patched} ${program.permaPatched === "PATCHED" && styles.permaPatched}`}
-                            onClick={state.pending 
-                                ? () => dispatch({ type: "SELECT_PENDING", programIndex: key}) 
-                                : () => dispatch({ type: "PLAY_PROGRAM", programIndex: key})
+                            disabled={isPlaying}
+                            className={`${styles.programBtn} ${styles[typeClass[key]]} ${ATTRIBUTES[view.pending?.attributeQueue[0]] && styles[toCamel(view.pending.attributeQueue[0])]} ${program.patched && styles.patched} ${program.permaPatched === "PATCHED" && styles.permaPatched}`}
+                            onClick={view.pending 
+                                ? () => send({ type: "SELECT_PENDING", programIndex: key}) 
+                                : () => send({ type: "PLAY_PROGRAM", programIndex: key})
                             }>
                                 <div className={styles.intro}>
                                     <div>
@@ -134,18 +168,18 @@ export function Combat() {
                                     {AttributeRender(program, program.type)}
                                     <p className={styles.patchChance}>pc: {(program.patchChance * 2) * 10}%</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                     <div className={styles.lower}>
                         <div className={styles.health}>
-                            <p className={styles.text}><span>Player HP:</span> {state.player.hp} / {state.player.maxHp}</p>
+                            <p className={styles.text}><span>Player HP:</span> {view.player.hp} / {view.player.maxHp}</p>
                             <div className={styles.bars}>
-                                <progress className={`${styles.bar}`} max={ state.player.maxHp } value={ state.player.hp }></progress>
-                                <div className={styles.blockBar} style={state.player.block > 0 ? {opacity: 1} : {opacity: 0}}><Shield fill="white" height={24}/>{state.player.block}</div>
+                                <progress className={`${styles.bar}`} max={ view.player.maxHp } value={ view.player.hp }></progress>
+                                <div className={styles.blockBar} style={view.player.block > 0 ? {opacity: 1} : {opacity: 0}}><Shield fill="white" height={24}/>{view.player.block}</div>
                             </div>
                         </div>
-                        <button className={styles.endTurnBtn} type="button" onClick={() => dispatch({ type: "TURN_END" })}>
+                        <button className={styles.endTurnBtn} type="button" onClick={() => send({ type: "TURN_END" })}>
                             End Turn
                         </button>
                     </div>

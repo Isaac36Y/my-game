@@ -4,13 +4,19 @@
     --color-surface: rgb(149, 118, 118); 
     --color-block: rgb(91, 106, 181);
 
-    --fs-xs: 0.8rem;
-    --fs-sm: 0.9rem;
-    --fs-reg: 1rem
-    --fs-med: 1.4rem;
-    --fs-lg: 1.6rem;
-    --fs-xl: 2rem;
-    --fs-xxl: 2.5rem;
+    /* The single lever the whole UI is sized from. Tracks viewport height, so
+       every font, gap, and box below scales with the window instead of forcing
+       it to scroll. clamp() keeps it readable on short laptops and stops it
+       ballooning on tall displays. 1u == 16px at a 1000px-tall viewport. */
+    --u: clamp(0.7rem, 1.6dvh, 1.25rem);
+
+    --fs-xs: calc(var(--u) * 0.8);
+    --fs-sm: calc(var(--u) * 0.9);
+    --fs-reg: calc(var(--u) * 1);
+    --fs-med: calc(var(--u) * 1.4);
+    --fs-lg: calc(var(--u) * 1.6);
+    --fs-xl: calc(var(--u) * 2);
+    --fs-xxl: calc(var(--u) * 2.5);
 
     --ff-title: 'Share Tech Mono', monospace;
     --ff-body: 'Cascadia Code Variable', sans-serif;
